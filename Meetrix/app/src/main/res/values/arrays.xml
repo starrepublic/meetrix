@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="glowpad_targets">
+        <item>@drawable/ic_time_15_selector</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@drawable/ic_time_60_selector</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@drawable/ic_time_45_selector</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@drawable/ic_time_30_selector</item>
+        <item>@null</item>
+        <item>@null</item>
+    </array>
+</resources>

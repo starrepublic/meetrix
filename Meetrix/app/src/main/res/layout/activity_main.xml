@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="loading"
+            type="java.lang.Boolean" />
+
+        <variable
+            name="time"
+            type="java.lang.String" />
+
+        <variable
+            name="room"
+            type="java.lang.String" />
+    </data>
+
+    <RelativeLayout
+
+        android:id="@+id/layout_root"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#52FA74"
+        tools:context="com.starrepublic.meetrix.MainActivity">
+
+        <View
+            android:id="@+id/view_current_timeline"
+            android:layout_width="2dp"
+            android:layout_height="0dp"
+            android:layout_alignParentBottom="true"
+            android:layout_below="@+id/glow_pad"
+            android:layout_centerHorizontal="true"
+            android:background="#000" />
+
+        <com.starrepublic.meetrix.widget.EventView
+            android:id="@+id/view_new_event"
+            android:layout_width="0dp"
+
+            android:layout_height="@dimen/event_height"
+            android:layout_alignParentBottom="true" />
+
+        <com.starrepublic.meetrix.widget.SnappingHorizontalScrollView
+            android:id="@+id/scrollview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <RelativeLayout
+                android:id="@+id/layout_events"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+
+            </RelativeLayout>
+
+        </com.starrepublic.meetrix.widget.SnappingHorizontalScrollView>
+
+
+        <TextView
+            android:id="@+id/txt_selected_time"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/time_height"
+            android:layout_alignParentBottom="true"
+            android:layout_toEndOf="@+id/view_current_timeline"
+            android:layout_toRightOf="@+id/view_current_timeline"
+            android:paddingEnd="8dp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingStart="8dp"
+            android:text="14:00"
+            android:textSize="16sp" />
+
+
+        <TextView
+            android:id="@+id/txt_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="16dp"
+            android:text="@{time}"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            tools:text="15:30" />
+
+
+        <TextView
+            android:id="@+id/txt_room"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/txt_time"
+            android:layout_centerHorizontal="true"
+            android:text="@{room}"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display4"
+            tools:text="Nikki Sixx" />
+
+
+        <com.android.keyguard.widget.GlowPadView
+            android:id="@+id/glow_pad"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            app:allowScaling="true"
+            app:cloudColor="@color/icon_color"
+            app:feedbackCount="1"
+            app:glowRadius="75dp"
+            app:handleDrawable="@drawable/ic_handle_transition"
+            app:innerRadius="15dip"
+            app:magneticTargets="false"
+            app:outerRadius="@dimen/glowpad_outer_radius"
+            app:outerRingDrawable="@drawable/ic_glowpad_outerring"
+            app:snapMargin="40dp"
+            app:targetDrawables="@array/glowpad_targets"
+            app:vibrationDuration="0" />
+
+
+        <ImageView
+            android:id="@+id/btn_settings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="16dp"
+            android:src="@drawable/ic_settings" />
+
+        <ProgressBar
+            android:padding="16dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:indeterminate="true"
+            android:theme="@style/AppTheme.BlackAccent" />
+
+
+    </RelativeLayout>
+</layout>

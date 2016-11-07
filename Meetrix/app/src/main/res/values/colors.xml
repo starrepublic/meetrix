@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#666</color>
+    <color name="colorPrimaryDark">#333</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <color name="black_overlay">#66000000</color>
+
+    <color name="available">#52FA74</color>
+    <color name="unavailable">#F64653</color>
+
+    <color name="icon_color">#000</color>
+    <color name="icon_color_dim">#8A000000</color>
+    <color name="icon_color_dimmer">#4D000000</color>
+</resources>

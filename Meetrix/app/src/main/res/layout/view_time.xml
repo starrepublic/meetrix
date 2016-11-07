@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="@dimen/time_width"
+    android:layout_height="@dimen/time_height">
+
+    <TextView
+        android:paddingStart="8dp"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:paddingEnd="8dp"
+        android:id="@+id/txt_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="14:00"
+        android:textSize="16sp" />
+
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:background="@color/icon_color_dim" />
+
+
+
+</merge>
