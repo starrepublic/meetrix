@@ -19,9 +19,9 @@ class EventsRepository @Inject constructor(val calendar:com.google.api.services.
 
     override fun getEvents(): Observable<List<Event>> {
 
-        return Observable.create { t ->
+        return Observable.create {
             val cal = Calendar.getInstance() // locale-specific
-            cal.setTime(Date())
+            cal.time = Date()
             cal.set(Calendar.HOUR_OF_DAY, 0)
             cal.set(Calendar.MINUTE, 0)
             cal.set(Calendar.SECOND, 0)
@@ -33,9 +33,14 @@ class EventsRepository @Inject constructor(val calendar:com.google.api.services.
             try {
                 val events = calendar.events().list("primary").setMaxResults(10).setTimeMin(now).setOrderBy("startTime").setSingleEvents(true).execute()
                 val items = events.getItems()
-                t?.onNext(items)
+                if(!it.isUnsubscribed) {
+                    it.onNext(items)
+                }
             }catch (e:Exception){
-                t?.onError(e);
+                if(!it.isUnsubscribed) {
+                    it.onError(e);
+                }
+
             }
         };
 
@@ -50,6 +55,8 @@ class EventsRepository @Inject constructor(val calendar:com.google.api.services.
     }
 
     override fun getRooms(): Single<List<Directory.Resources>> {
+
+
         throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    >
+
+    <TextView
+        android:id="@+id/txt_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Mötesbokning"
+        android:maxLines="1"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/txt_time_span"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="15:00-16:00"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/txt_event_creator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:minLines="2"
+        android:maxLines="2"
+        android:text="Dan Stendahl"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+
+</merge>

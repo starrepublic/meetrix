@@ -1,92 +1,84 @@
 package com.starrepublic.meetrix2.events
 
 
+import android.app.Dialog
 import android.content.Intent
+import android.databinding.*
 import android.os.Bundle
 import android.provider.ContactsContract
+import android.renderscript.ScriptGroup
+import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.google.api.services.admin.directory.Directory
 import com.google.api.services.calendar.model.Event
-import com.starrepublic.meetrix2.BaseFragment
-import com.starrepublic.meetrix2.MeetrixApp
+import com.starrepublic.meetrix2.App
+import com.starrepublic.meetrix2.BR
+import com.starrepublic.meetrix2.R
+import com.starrepublic.meetrix2.databinding.DialogSelectRoomBinding
+import com.starrepublic.meetrix2.injections.AppComponent
+import me.tatarka.bindingcollectionadapter.ItemView
+import nl.endran.skeleton.fragments.EventsFragmentPresenter
+import nl.endran.skeleton.fragments.EventsFragmentView
+import com.starrepublic.meetrix2.mvp.BaseFragment
 import javax.inject.Inject
 
 /**
  * Created by richard on 2016-11-02.
  */
-class EventsFragment : Fragment(), EventsContract.View {
+class EventsFragment : BaseFragment<EventsFragment, EventsFragmentPresenter.ViewModel, EventsFragmentPresenter, EventsFragmentView>() {
 
-    override fun hasPermission(permission: String): Boolean {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun startActivityForResult(newChooseAccountIntent: Intent?, requestCode: Int) {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    companion object {
+        fun newInstance() = EventsFragment()
 
 
-    override fun showError(exception: Throwable?) {
 
     }
 
-    override fun onResume() {
-        super.onResume()
-        presenter.start()
-    }
-
-    @Inject lateinit var eventsViewModel: EventsViewModel
-
-
-    private lateinit var presenter: EventsContract.Presenter
-
-
-    override fun showEvents(events: List<Event>) {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data);
-        presenter.result(requestCode,resultCode, data)
+    override fun createView(appComponent: AppComponent): EventsFragmentView {
+        return appComponent.getEventsFragmentView()
     }
 
 
-
-
-
-
-
-
-
-    override fun setPresenter(presenter: EventsContract.Presenter) {
-        this.presenter = presenter;
-    }
-
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-
-
-
-
-        return super.onCreateView(inflater, container, savedInstanceState)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
+    override fun createPresenter(appComponent: AppComponent): EventsFragmentPresenter {
+        return appComponent.getEventsFragmentPresenter()
     }
 
 
-    companion object Factory {
-        fun create(): EventsFragment = EventsFragment()
-    }
+    class SelectRoomDialogFragment : DialogFragment() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
 
-    }
+        val fragment : EventsFragment by lazy {
+            (this.targetFragment as EventsFragment)
+        }
 
-    override fun onPause() {
-        super.onPause()
+        val vm = SelectRoomDialogViewModel()
+
+
+        override fun onResume() {
+            super.onResume()
+
+            fragment.presenter?.loadRooms()
+
+        }
+
+        fun showRooms(resources:List<Directory.Resources>){
+        }
+
+        override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+
+
+            val binding:DialogSelectRoomBinding = DataBindingUtil.inflate<DialogSelectRoomBinding>(inflater, R.layout.dialog_select_room, container, false);
+
+            binding.setVariable(BR.viewModel, vm);
+            dialog.setTitle(R.string.select_room);
+
+            return binding.root
+        }
+
+
     }
 }
+
