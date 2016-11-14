@@ -4,6 +4,12 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.Color
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import android.support.annotation.IdRes
 import android.support.design.widget.Snackbar
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
@@ -13,10 +19,13 @@ import android.view.View
 import android.widget.Toast
 import com.starrepublic.meetrix2.App
 import com.starrepublic.meetrix2.injections.AppComponent
+import java.util.*
 
-/**
- * Created by richard on 2016-11-04.
- */
+
+@Suppress("UNCHECKED_CAST")
+fun <T : View> View.findViewByIdTyped(@IdRes id:Int):T {
+    return findViewById(id) as T
+}
 
 
 fun FragmentActivity.addFragmentToActivity(fragment: Fragment?, frameId:Int){
@@ -32,7 +41,7 @@ fun ContextCompat.checkSelfPermission(context: Context, permission:String): Bool
 }
 
 fun Context.getAppComponent(): AppComponent {
-    return (applicationContext as App).getAppComponent()
+    return (applicationContext as App).appComponent!!
 }
 
 fun View.getLayoutInflater(): LayoutInflater {
@@ -45,4 +54,125 @@ fun View.showToast(message: String) {
 
 fun View.showSnackBar(message: String) {
     Snackbar.make(this, message, Snackbar.LENGTH_SHORT).show()
+}
+
+fun Context.dpToPx(dp: Float): Int {
+    return (this.resources.displayMetrics.density * dp).toInt()
+}
+
+fun Context.getStatusBarHeight(): Int {
+    val resources = this.resources
+    var result = 0
+    val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
+    if (resourceId > 0) {
+        result = resources.getDimensionPixelSize(resourceId)
+    }
+    return result
+}
+
+fun Context.getNavigationBarHeight(): Int {
+    val resources = this.resources
+
+    val id = resources.getIdentifier(
+            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) "navigation_bar_height" else "navigation_bar_height_landscape",
+            "dimen", "android")
+    if (id > 0) {
+        return resources.getDimensionPixelSize(id)
+    }
+    return 0
+}
+
+fun Context.getActionBarHeight(): Int {
+    val styledAttributes = this.theme.obtainStyledAttributes(
+            intArrayOf(android.R.attr.actionBarSize))
+    val actionBarSize = styledAttributes.getDimension(0, 0f).toInt()
+    styledAttributes.recycle()
+    return actionBarSize
+}
+
+
+fun Color.parseColor(value: String?): Int {
+    if (value == null) {
+        return -1
+    } else {
+        try {
+            return Color.parseColor(value)
+        } catch (e: IllegalArgumentException) {
+            return -1
+        }
+
+    }
+}
+
+fun Date.millisToString(l: Long): String {
+    val h: Long
+    val m: Long
+    h = l / 3600000
+    m = l % 3600000 / 60000
+    if (h == 0L) {
+        return m.toString() + "m"
+    } else {
+        return h.toString() + "h " + m + "m"
+    }
+}
+
+fun Date.dateToRelativeString(strTomorrow: String, strYesterday: String): String {
+
+
+    var today = Date().time
+    today -= today % 86400000
+
+    var due = this.time
+    due -= due % 86400000
+
+    val diff = (due - today) / 86400000
+
+
+    var relative = ""
+
+    if (diff == 1L) {
+        relative = strTomorrow + " "
+    } else if (diff == -1L) {
+        relative = strYesterday + " "
+    } else if (diff != 0L) {
+        //relative = Constants.DATE_FORMAT_DATE.format(due) + " ";
+    }
+
+    return relative
+}
+
+fun Date.removeTime(): Date {
+    val cal = Calendar.getInstance()
+    cal.time = this
+    cal.set(Calendar.HOUR_OF_DAY, 0)
+    cal.set(Calendar.MINUTE, 0)
+    cal.set(Calendar.SECOND, 0)
+    cal.set(Calendar.MILLISECOND, 0)
+    return cal.time
+}
+
+fun Context.launchAppDetail() {
+    val packageName = this.applicationContext.packageName
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        intent.data = Uri.parse("package:" + packageName!!)
+        startActivity(intent)
+        return
+    } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.FROYO) {
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        intent.setClassName("com.android.settings",
+                "com.android.settings.InstalledAppDetails")
+        intent.putExtra("pkg", packageName)
+        startActivity(intent)
+        return
+    }
+    val intent = Intent(Intent.ACTION_VIEW)
+    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    intent.setClassName("com.android.settings",
+            "com.android.settings.InstalledAppDetails")
+    intent.putExtra("com.android.settings.ApplicationPkgName", packageName)
+    startActivity(intent)
 }

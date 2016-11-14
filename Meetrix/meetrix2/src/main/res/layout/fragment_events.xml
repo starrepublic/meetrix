@@ -14,11 +14,10 @@
     </data>
 
     <RelativeLayout
-
-        android:id="@+id/layout_root"
+        android:fitsSystemWindows="false"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#52FA74">
+        android:background="@color/available">
 
         <View
             android:id="@+id/view_current_timeline"
@@ -30,12 +29,13 @@
             android:background="#000" />
 
         <FrameLayout
-            android:id="@+id/view_new_event"
+            android:id="@+id/lay_new_event"
             android:layout_width="0dp"
             android:layout_height="@dimen/event_height"
             android:layout_alignParentBottom="true">
 
             <com.starrepublic.meetrix2.widget.EventView
+                android:id="@+id/view_new_event"
                 android:layout_width="@dimen/time_width"
                 android:layout_height="match_parent" />
 
@@ -51,7 +51,6 @@
                 android:id="@+id/layout_events"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
-
 
             </RelativeLayout>
 
@@ -92,7 +91,8 @@
             android:layout_below="@id/txt_time"
             android:layout_centerHorizontal="true"
             android:text="@{ viewModel.room }"
-            android:textAppearance="@style/TextAppearance.AppCompat.Display4"
+            android:fontFamily="sans-serif-light"
+            android:textSize="96sp"
             tools:text="Nikki Sixx" />
 
 
@@ -130,10 +130,18 @@
             android:layout_height="24dp"
             android:indeterminate="true"
             android:padding="16dp"
-
+            android:id="@+id/progress"
             android:theme="@style/AppTheme.BlackAccent"
+            android:visibility="@{ viewModel.loading!=null ? View.VISIBLE:View.GONE }" />
 
-            android:visibility="@{ viewModel.loading ? View.VISIBLE:View.GONE }" />
+        <TextView
+            android:layout_toRightOf="@+id/progress"
+            android:layout_toEndOf="@+id/progress"
+            tools:text="Loading users..."
+            android:layout_marginTop="8dp"
+            android:textSize="12sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
 
     </RelativeLayout>

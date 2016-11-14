@@ -31,9 +31,9 @@ class SnappingHorizontalScrollView : HorizontalScrollView {
     private var currentlyTouching:Boolean = false;
     private var currentlyScrolling:Boolean = false
     private var lastDiff:Int = -1;
-    private val snappingEnabled: Boolean = false;
 
-    public var snapTo:Int = 0;
+    var snappingEnabled: Boolean = false;
+    var snapTo:Int = 0;
 
     override fun onScrollChanged(x: Int, y: Int, oldX: Int, oldY: Int) {
 

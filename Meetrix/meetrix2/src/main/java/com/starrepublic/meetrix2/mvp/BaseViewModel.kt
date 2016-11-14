@@ -8,8 +8,9 @@ import android.os.Bundle
  */
 interface BaseViewModel {
 
+    fun showError(error: Throwable?, code:Int=0)
     fun showToast(message: String)
     fun showSnackbar(message: String)
     fun hasPermission(permission: String): Boolean
-    fun startActivityForResult(intent: Intent?, requestCode: Int, options: Bundle?)
+    fun string(messageId:Int):String?
 }

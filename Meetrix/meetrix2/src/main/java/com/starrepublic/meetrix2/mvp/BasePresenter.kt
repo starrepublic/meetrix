@@ -3,7 +3,7 @@ package com.starrepublic.meetrix2.mvp
 /**
  * Created by richard on 2016-11-08.
  */
-abstract class BasePresenter2<V:BaseViewModel>(){
+abstract class BasePresenter<V:BaseViewModel>(){
 
 
 

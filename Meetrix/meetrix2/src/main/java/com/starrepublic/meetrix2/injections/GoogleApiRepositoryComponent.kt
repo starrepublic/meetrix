@@ -1,6 +1,6 @@
 package com.starrepublic.meetrix2.data
 
-import com.starrepublic.meetrix2.CalendarModule
+import com.starrepublic.meetrix2.GoogleApiModule
 import com.starrepublic.meetrix2.injections.AppComponent
 import com.starrepublic.meetrix2.injections.AppModule
 import com.starrepublic.meetrix2.mvp.scopes.PerApplication
@@ -12,9 +12,9 @@ import javax.inject.Singleton
  */
 
 @Singleton
-@Component(modules = arrayOf(CalendarModule::class, AppModule::class))
-interface EventsRepositoryComponent {
+@Component(modules = arrayOf(GoogleApiModule::class, AppModule::class))
+interface GoogleApiRepositoryComponent {
 
-    fun getEventsRepository(): EventsRepository
+    fun getEventsRepository(): GoogleApiRepository
 
 }

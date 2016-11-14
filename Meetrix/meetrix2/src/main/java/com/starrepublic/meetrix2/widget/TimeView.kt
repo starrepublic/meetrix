@@ -18,6 +18,12 @@ import java.util.Date;
 
 class TimeView : RelativeLayout {
 
+    companion object {
+        val DATE_FORMAT: SimpleDateFormat = SimpleDateFormat("HH:mm")
+    }
+
+    var textView:TextView
+
     constructor(context: Context) : this(context, null)
 
     constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
@@ -27,23 +33,14 @@ class TimeView : RelativeLayout {
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes)
 
     init {
-        inflate(getContext(), R.layout.view_time, this)
-
+        inflate(context, R.layout.view_time, this)
         textView = findViewById(R.id.txt_time) as TextView
     }
-
-    companion object {
-        val DATE_FORMAT: SimpleDateFormat = SimpleDateFormat("HH:mm")
-    }
-
-
-    var textView:TextView
-
 
     var time:Date = Date()
         get() = field
         set(value) {
             field = value
-            textView.setText(DATE_FORMAT.format(time));
+            textView.text = DATE_FORMAT.format(time);
         }
 }

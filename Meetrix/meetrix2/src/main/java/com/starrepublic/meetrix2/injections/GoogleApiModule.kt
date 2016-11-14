@@ -7,6 +7,8 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccoun
 import com.google.api.client.http.HttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.ExponentialBackOff
+import com.google.api.services.admin.directory.Directory
+import com.google.api.services.admin.directory.DirectoryScopes
 import com.google.api.services.calendar.Calendar
 import com.google.api.services.calendar.CalendarScopes
 import dagger.Module
@@ -20,28 +22,34 @@ import javax.inject.Singleton
 
 
 @Module
-class CalendarModule{
+class GoogleApiModule {
 
-        private val SCOPES = arrayOf<String>(CalendarScopes.CALENDAR)
-
+        private val scopes = arrayOf<String>(CalendarScopes.CALENDAR, DirectoryScopes.ADMIN_DIRECTORY_RESOURCE_CALENDAR, DirectoryScopes.ADMIN_DIRECTORY_USER, DirectoryScopes.ADMIN_DIRECTORY_USER_READONLY)
+        private val jsonFactory = JacksonFactory.getDefaultInstance()
+        private val transport:HttpTransport = AndroidHttp.newCompatibleTransport();
 
         @Provides
         @Singleton
         fun provideCredential(context: Context) : GoogleAccountCredential{
                 val credential = GoogleAccountCredential.usingOAuth2(
-                        context.applicationContext, SCOPES.asList()).setBackOff(ExponentialBackOff())
+                        context.applicationContext, scopes.asList()).setBackOff(ExponentialBackOff())
                 return credential;
         }
 
         @Provides
         @Singleton
         fun provideCalendar(credential:GoogleAccountCredential): Calendar{
-
-
-                val transport:HttpTransport = AndroidHttp.newCompatibleTransport();
-                val jsonFactory = JacksonFactory.getDefaultInstance()
                 return Calendar.Builder(
-                        transport, jsonFactory, credential).setApplicationName("Google Calendar API Android Quickstart").build();
+                        transport, jsonFactory, credential).setApplicationName("Meetrix").build();
         }
+
+        @Provides
+        @Singleton
+        fun provideDirectory(credential:GoogleAccountCredential): Directory {
+                return Directory.Builder(
+                        transport, jsonFactory, credential).setApplicationName("Meetrix").build();
+        }
+
+
 
 }

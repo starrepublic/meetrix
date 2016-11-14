@@ -27,6 +27,7 @@ public class TargetDrawable {
     public static final int[] STATE_FOCUSED =
             {android.R.attr.state_enabled, -android.R.attr.state_active,
                     android.R.attr.state_focused};
+    public static final float DISABLED_ALPHA = 0.4f;
 
     // We're using Reflection to access these private APIs on older Android versions
     static Method mGetStateDrawableIndex, mGetStateCount, mGetStateDrawable;
@@ -310,14 +311,18 @@ public class TargetDrawable {
     }
 
     public void draw(Canvas canvas) {
-        if (mDrawable == null || !mEnabled) {
+        if (mDrawable == null) {
             return;
+        }
+        float alpha = mAlpha;
+        if(!mEnabled){
+            alpha = mAlpha< DISABLED_ALPHA ?mAlpha:DISABLED_ALPHA;
         }
         canvas.save(Canvas.MATRIX_SAVE_FLAG);
         canvas.scale(mScaleX, mScaleY, mPositionX, mPositionY);
         canvas.translate(mTranslationX + mPositionX, mTranslationY + mPositionY);
         canvas.translate(-0.5f * getWidth(), -0.5f * getHeight());
-        mDrawable.setAlpha(Math.round(mAlpha * 255f));
+        mDrawable.setAlpha(Math.round(alpha * 255f));
         mDrawable.draw(canvas);
         canvas.restore();
     }

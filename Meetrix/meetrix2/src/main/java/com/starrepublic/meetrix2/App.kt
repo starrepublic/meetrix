@@ -1,7 +1,10 @@
 package com.starrepublic.meetrix2
 
 import android.app.Application
+import android.content.Context
 import android.os.Handler
+import android.support.multidex.MultiDex
+import android.support.multidex.MultiDexApplication
 import com.starrepublic.meetrix2.injections.AppComponent
 import com.starrepublic.meetrix2.injections.AppModule
 import com.starrepublic.meetrix2.injections.DaggerAppComponent
@@ -11,15 +14,16 @@ import com.starrepublic.meetrix2.injections.DaggerAppComponent
  */
 
 
-class App : Application() {
+class App() : MultiDexApplication() {
 
 
-    companion object{
-        lateinit var appComponent: AppComponent
+     var appComponent: AppComponent? = null
+
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(newBase)
+        MultiDex.install(this)
     }
-
-
-
 
     override fun onCreate() {
         super.onCreate();
@@ -36,7 +40,7 @@ class App : Application(){
 
 
     companion object{
-        lateinit var eventsRepositoryComponent: EventsRepositoryComponent
+        lateinit var eventsRepositoryComponent: GoogleApiRepositoryComponent
     }
 
 

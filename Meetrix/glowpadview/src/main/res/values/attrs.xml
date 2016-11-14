@@ -23,13 +23,13 @@
         <!-- Drawable to use for wave ripple animation. -->
         <attr name="waveDrawable" format="reference" />
 
-        <!-- Outer radius of target circle. Icons will be drawn on this circle. -->
+        <!-- Outer radius of targetToTime circle. Icons will be drawn on this circle. -->
         <attr name="outerRadius" format="dimension" />
 
         <!-- Tactile feedback duration for actions. Set to '0' for no vibration. -->
         <attr name="vibrationDuration" format="integer" />
 
-        <!-- How close we need to be before snapping to a target. -->
+        <!-- How close we need to be before snapping to a targetToTime. -->
         <attr name="snapMargin" format="dimension" />
 
         <!-- Number of waves/chevrons to show in animation. -->

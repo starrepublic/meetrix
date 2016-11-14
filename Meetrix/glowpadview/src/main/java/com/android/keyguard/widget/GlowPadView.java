@@ -59,6 +59,8 @@ public class GlowPadView extends View {
 
     private ValueAnimator handleAnimator = ValueAnimator.ofFloat(0f, 1f);
 
+
+
     public interface OnTriggerListener {
         int NO_HANDLE = 0;
         int CENTER_HANDLE = 1;
@@ -641,10 +643,12 @@ public class GlowPadView extends View {
         }
     }
 
+
     private void internalSetTargetResources(ArrayList<TargetDrawable> targets) {
         if (targets == null || targets.size() == 0) {
             throw new IllegalStateException("Must specify at least one target drawable");
         }
+
         mTargetResourceId = 0;
         mTargetDrawables = targets;
 
@@ -1375,6 +1379,16 @@ public class GlowPadView extends View {
         }
         array.recycle();
         return targetContentDescriptions;
+    }
+
+    public int[] getTargetIds() {
+        int[] ids = new int[mTargetDrawables.size()];
+        int i = 0;
+        for(TargetDrawable targetDrawable : mTargetDrawables){
+            ids[i] = targetDrawable.getResourceId();
+            i++;
+        }
+        return ids;
     }
 
     public int getResourceIdForTarget(int index) {
