@@ -9,7 +9,8 @@
     <color name="available">#52FA74</color>
     <color name="unavailable">#F64653</color>
 
-    <color name="icon_color">#000</color>
+    <color name="icon_color">#FF000000</color>
     <color name="icon_color_dim">#8A000000</color>
     <color name="icon_color_dimmer">#4D000000</color>
+    <color name="logo_color">#06000000</color>
 </resources>

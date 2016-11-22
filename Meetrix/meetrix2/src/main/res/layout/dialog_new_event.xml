@@ -41,6 +41,7 @@
             android:inputType="time"
             android:text="@={viewModel.from}"
             android:textSize="18sp"
+            android:visibility="gone"
             android:textStyle="bold" />
 
         <TextView
@@ -49,6 +50,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@+id/txt_event_name"
             android:layout_margin="8dp"
+            android:visibility="gone"
             android:layout_toRightOf="@id/txt_time_from"
             android:text="@string/to" />
 
@@ -59,6 +61,7 @@
             android:layout_below="@id/txt_event_name"
             android:layout_toRightOf="@id/txt_to"
             android:ems="10"
+            android:visibility="gone"
             tools:text="16:00"
             android:hint="@{viewModel.to}"
             android:inputType="time"

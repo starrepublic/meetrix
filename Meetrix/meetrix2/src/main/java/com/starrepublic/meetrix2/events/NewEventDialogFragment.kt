@@ -108,6 +108,7 @@ class NewEventDialogFragment : BaseDialogFragment() {
 
     override fun onDismiss(dialog: DialogInterface?) {
         super.onDismiss(dialog)
+        fragment.dismissedDialog(this);
         BroadcastEvents.send(context, Intent(BroadcastEvents.dialogClosedEvent))
     }
 }

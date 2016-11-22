@@ -19,6 +19,8 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Vibrator;
@@ -850,7 +852,10 @@ public class GlowPadView extends View {
             case MotionEvent.ACTION_POINTER_DOWN:
             case MotionEvent.ACTION_DOWN:
                 if (DEBUG) Log.v(TAG, "*** DOWN ***");
-                handleDown(event);
+                handled = handleDown(event);
+                if(!handled){
+                    return false;
+                }
                 handleMove(event);
                 handled = true;
                 break;
@@ -878,7 +883,7 @@ public class GlowPadView extends View {
 
         }
         invalidate();
-        return handled ? true : super.onTouchEvent(event);
+        return handled || super.onTouchEvent(event);
     }
 
     private void updateGlowPosition(float x, float y) {
@@ -890,17 +895,28 @@ public class GlowPadView extends View {
         mPointCloud.glowManager.setY(mOuterRing.getY() + dy);
     }
 
-    private void handleDown(MotionEvent event) {
+    private boolean handleDown(MotionEvent event) {
         int actionIndex = event.getActionIndex();
         float eventX = event.getX(actionIndex);
         float eventY = event.getY(actionIndex);
-        switchToState(STATE_START, eventX, eventY);
-        if (!trySwitchToFirstTouchState(eventX, eventY)) {
-            mDragging = false;
-        } else {
-            mPointerId = event.getPointerId(actionIndex);
-            updateGlowPosition(eventX, eventY);
+
+        int handleWidthHalf = mHandleDrawable.getWidth()/2;
+        float handleX = mHandleDrawable.getPositionX();
+        float handleY = mHandleDrawable.getPositionY();
+        RectF handleRect = new RectF(handleX-handleWidthHalf,handleY-handleWidthHalf,handleX+handleWidthHalf,handleY+handleWidthHalf);
+
+        if(handleRect.contains(eventX,eventY)){
+            switchToState(STATE_START, eventX, eventY);
+            if (!trySwitchToFirstTouchState(eventX, eventY)) {
+                mDragging = false;
+            } else {
+                mPointerId = event.getPointerId(actionIndex);
+                updateGlowPosition(eventX, eventY);
+            }
+            return true;
         }
+
+        return false;
     }
 
     @SuppressWarnings("unused")

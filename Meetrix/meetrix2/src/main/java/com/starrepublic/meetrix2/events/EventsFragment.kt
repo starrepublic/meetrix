@@ -65,6 +65,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     companion object {
         fun newInstance() = EventsFragment()
         val DATE_FORMAT: SimpleDateFormat = SimpleDateFormat("HH:mm")
+        val DATE_FORMAT_FULL: SimpleDateFormat = SimpleDateFormat("HH:mm yyyy-MM-dd")
         val RESET_SCROLL_TIME: Int = 15
 
         val REQUEST_ACCOUNT_PICKER = 1000
@@ -157,6 +158,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     override fun showSelectRoomDialog() {
         val selectRoomDialogFragment = SelectRoomDialogFragment()
         selectRoomDialogFragment.setTargetFragment(this, 0)
+        selectRoomDialogFragment.isCancelable = presenter?.room!=null
         selectRoomDialogFragment.show(fragmentManager, "select_room_dialog")
     }
 
@@ -188,6 +190,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         binding.setVariable(BR.viewModel, vm);
 
         binding.txtTime.setOnClickListener { resetTimeline(true) }
+        updateTime()
 
         val dummyEvent = Event()
         dummyEvent.summary = getString(R.string.new_event)
@@ -197,7 +200,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             showSelectRoomDialog()
         }
 
-        var resources = context.resources;
+        val resources = context.resources;
 
         val glowPadDiameter = resources.getDimensionPixelSize(R.dimen.glowpad_outerring_diameter)
 
@@ -212,6 +215,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
         binding.glowPad?.setOnTriggerListener(object : GlowPadView.OnTriggerListener {
 
+
             fun enableViews(glowPad: GlowPadView, index: Int) {
 
                 for (id in glowPad.getTargetIds()) {
@@ -224,7 +228,14 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             }
 
             override fun onGrabbed(v: View, handle: Int) {
+
+                binding.scrollview.smoothScrollBy(0,0)
+
+                handler.removeCallbacks(resetTimeRunnable)
+
+
                 val glowPad = v as GlowPadView
+                binding.layNewEvent.visibility = View.VISIBLE
 
 
 
@@ -232,24 +243,23 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
                     enableViews(glowPad, -1)
                 } else {
                     val minutes = Math.round(selectedTimeInHours * 60f)
-                    val firstEventMinutes = Math.min(eventViewList.find { it.startMinutes > minutes }?.startMinutes ?: minutes + 60f, minutes + 60f)
+                    val firstEventMinutes = Math.min(eventViewList.find { it.startMinutes >= minutes }?.startMinutes ?: minutes + 60f, minutes + 60f)
                     val diff = firstEventMinutes - minutes;
-
 
                     val index = Math.floor(diff / 15f.toDouble()).toInt()
                     enableViews(glowPad, index - 1)
-
 
                 }
             }
 
             override fun onReleased(v: View, handle: Int) {
                 animateNewEvent(binding.layNewEvent.width, 0)
+                resetTimeout()
             }
 
             override fun onTrigger(v: View, target: Int) {
+                binding.layNewEvent.visibility = View.GONE
                 val time = targetToTime(target)
-                Timber.d("from triggered", time)
                 showNewEventDialog(time)
             }
 
@@ -356,6 +366,10 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
     private fun showNewEventDialog(minutes: Int) {
 
+
+        handler.removeCallbacks(resetTimeRunnable)
+
+
         val from = selectedTimeToDate()
         val to = Date(from.time + minutes.toLong() * 60L * 1000L)
 
@@ -399,7 +413,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
                 }
             }
             else -> {
-                AlertDialog.Builder(context).setMessage("ERROR!!!").create().show()
+                showToast(getString(R.string.error))
             }
         }
     }
@@ -413,36 +427,37 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         return this
     }
 
-    //TODO ignore view updates if we are scrolling
     override fun showEvents(events: List<Event>?) {
 
+        eventViewList.forEach {
+            binding.layoutEvents.removeView(it)
+        }
 
         eventViewList.clear()
-        for (i in 0..binding.layoutEvents.childCount) {
-            val child = binding.layoutEvents.getChildAt(i)
-            if (child is EventView) {
-                binding.layoutEvents.removeView(child)
-            }
-        }
+
+
+
+
 
         events?.forEach {
-            val eventView = EventView(context)
-            eventView.event = it
-            eventViewList.add(eventView)
-        }
-
-        for (eventView in eventViewList) {
-
-            val startHour: Float = eventView.startMinutes / 60f
-            val width: Float = (eventView.endMinutes / 60f) - startHour
-
-            val eventViewParams = RelativeLayout.LayoutParams((timeWidth * width).toInt(), eventHeight)
-            eventViewParams.leftMargin = (startHour * timeWidth).toInt()
-            eventViewParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 1)
-            binding.layoutEvents.addView(eventView, eventViewParams)
+            renderEvent(it)
         }
 
         onScrollChanged()
+
+    }
+
+    private fun renderEvent(event: Event) {
+        val eventView = EventView(context)
+        eventView.event = event
+
+        eventViewList.add(eventView)
+        val startHour: Float = eventView.startMinutes / 60f
+        val width: Float = (eventView.endMinutes / 60f) - startHour
+        val eventViewParams = RelativeLayout.LayoutParams((timeWidth * width).toInt(), eventHeight)
+        eventViewParams.leftMargin = (startHour * timeWidth).toInt()
+        eventViewParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 1)
+        binding.layoutEvents.addView(eventView, eventViewParams)
 
     }
 
@@ -459,10 +474,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         broadcastReceiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
                 if (intent.action.compareTo(Intent.ACTION_TIME_TICK) == 0) {
-
-                    vm.currentTime = DATE_FORMAT.format(Date())
-
-
+                    updateTime()
                     if (idle) {
                         resetTimeline(true)
                     }
@@ -472,6 +484,10 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         }
 
         activity.registerReceiver(broadcastReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
+    }
+
+    private fun updateTime() {
+        vm.currentTime = DATE_FORMAT.format(Date())
     }
 
     private fun resetTimeline(animate: Boolean) {
@@ -553,12 +569,18 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             return
         }
 
-        if (eventViewList.any {
-            it.startMinutes / 60f < selectedTimeInHours && it.endMinutes / 60f > selectedTimeInHours
-        }) {
+
+        val eventBusy = eventViewList.find {
+            it.startMinutes / 60f <= selectedTimeInHours && it.endMinutes / 60f > selectedTimeInHours
+        }
+
+
+        if (eventBusy!= null) {
+            vm.meeting = eventBusy.event?.summary ?: ""
             roomEnabled = false
             updateBackgroundColor(colorUnavailable)
         } else {
+            vm.meeting = ""
             roomEnabled = true
             updateBackgroundColor(colorAvailable)
         }
@@ -575,7 +597,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
         if (hourChanged) {
             timeTextView.setAlpha(0f)
-            val translationX = (if (hourDiff == 1) 0 else (hourDiff * timeWidth).toInt()).toFloat()
+            val translationX = (if (hourDiff == 1) 0 else (hourDiff * timeWidth)).toFloat()
 
             if (scrollSpeed < 20) {
 
@@ -620,6 +642,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         if (offset > diff) {
             selectedTimeTargetX = (-timeTextViewWidth).toInt()
             textOffset = diff.toInt()
+            //binding.txtSelectedTime.translationX = -(offset-diff)
         }
         timeTextView.setTranslationX(textOffset.toFloat())
         if (!hourChanged && (selectedTimeTranslationX.toDouble() == 0.0 || selectedTimeTranslationX == -timeTextViewWidth) && selectedTimeTargetX.toFloat() != selectedTimeTranslationX) {
@@ -629,9 +652,13 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         binding.txtSelectedTime.setText(TimeView.DATE_FORMAT.format(calendar.time))
 
 
+        resetTimeout()
+
+    }
+
+    private fun resetTimeout() {
         handler.removeCallbacks(resetTimeRunnable)
         handler.postDelayed(resetTimeRunnable, RESET_SCROLL_TIME * 1000L)
-
     }
 
     private fun updateBackgroundColor(color: Int) {
@@ -667,6 +694,16 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     override fun addEvent(event: Event) {
+        renderEvent(event)
+    }
 
+    override fun removeEvent(event: Event) {
+
+    }
+
+    fun dismissedDialog(dialog: DialogFragment) {
+        if (dialog is NewEventDialogFragment) {
+            resetTimeout()
+        }
     }
 }

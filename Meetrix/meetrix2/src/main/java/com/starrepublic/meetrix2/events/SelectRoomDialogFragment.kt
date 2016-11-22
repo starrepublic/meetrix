@@ -48,8 +48,6 @@ class SelectRoomDialogFragment : BaseDialogFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        isCancelable = false
     }
 
     override fun onResume() {

@@ -15,10 +15,6 @@ import java.util.*
  */
 class EventsViewModel : BaseObservable() {
 
-    companion object {
-        val DATE_FORMAT: SimpleDateFormat = SimpleDateFormat("HH:mm")
-    }
-
     @get:Bindable
     var loading: String? = null
         set(value) {
@@ -33,9 +29,16 @@ class EventsViewModel : BaseObservable() {
             notifyPropertyChanged(BR.room)
         }
 
+    @get:Bindable
+    var meeting: String = ""
+        set(value) {
+            field = value
+            notifyPropertyChanged(BR.meeting)
+        }
+
 
     @get:Bindable
-    var currentTime: String = DATE_FORMAT.format(Date())
+    var currentTime: String = ""
         set(value) {
             field = value
             notifyPropertyChanged(BR.currentTime)

@@ -70,10 +70,11 @@ class SnappingHorizontalScrollView : HorizontalScrollView {
 
     override fun onTouchEvent(ev: MotionEvent?): Boolean {
 
+
         when(ev?.action){
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 currentlyTouching = false;
-                if (!currentlyScrolling) {
+                     if (!currentlyScrolling) {
                     scrollStopped();
                 }
             }

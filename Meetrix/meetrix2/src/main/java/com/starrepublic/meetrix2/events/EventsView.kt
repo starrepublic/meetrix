@@ -20,4 +20,5 @@ interface EventsView : BaseViewModel {
     fun showLoading(message:String?)
     fun hideLoading()
     fun addEvent(event: Event)
+    fun removeEvent(event: Event)
 }

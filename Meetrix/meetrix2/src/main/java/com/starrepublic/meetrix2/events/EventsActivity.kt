@@ -13,7 +13,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.view.KeyEvent
+import android.view.WindowManager
 import com.starrepublic.meetrix2.utils.BroadcastEvents
+import android.view.KeyEvent.KEYCODE_POWER
+
+
 
 
 
@@ -31,6 +36,7 @@ class EventsActivity : AppCompatActivity() {
     }
 
     private fun setFlags() {
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
     }
 
@@ -38,6 +44,15 @@ class EventsActivity : AppCompatActivity() {
         override fun onReceive(context: Context, intent: Intent) {
             setFlags()
         }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.getKeyCode() === KeyEvent.KEYCODE_POWER) {
+
+            return true
+        }
+
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

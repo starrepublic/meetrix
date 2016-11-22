@@ -4,6 +4,7 @@ import android.Manifest
 import android.accounts.AccountManager
 import android.app.Activity
 import android.content.Intent
+import android.util.Log
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.util.DateTime
 import com.google.api.services.admin.directory.model.CalendarResource
@@ -22,6 +23,11 @@ import rx.Observable
 import rx.Single
 import rx.Subscription
 import rx.internal.util.SubscriptionList
+import rx.lang.kotlin.BehaviorSubject
+import rx.lang.kotlin.PublishSubject
+import rx.lang.kotlin.switchOnNext
+import rx.subjects.PublishSubject
+import rx.subjects.Subject
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -36,9 +42,12 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                                           val googleApiRepository: GoogleApiRepository) : BasePresenter<EventsView>() {
 
 
+
+
     //messages
     val MESSAGE_USERS: Int = 1
     val MESSAGE_EVENTS: Int = 2
+    val MESSAGE_CREATE: Int = 3
 
     //errors
     val ERROR_CREATE_EVENT:Int = 96
@@ -64,10 +73,17 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
 
     var users: Map<String, User> = emptyMap()
 
+    var adding:Boolean = false
+
+    private val refreshEventsSubject = PublishSubject<Long>()
+
     private var eventObservable: Observable<List<Event>>? = null
 
-    private val getEventsObservable = Observable.interval(0, 15, TimeUnit.SECONDS)
-            .doOnEach {
+
+    private val getEventsObservable = Observable.merge(Observable.interval(0, 15, TimeUnit.SECONDS).filter {
+        !adding
+    }, refreshEventsSubject.delay(2, TimeUnit.SECONDS))
+            .doOnNext {
                 view?.showLoading(view?.string(MESSAGE_EVENTS))
             }
             .flatMap { eventObservable }
@@ -110,6 +126,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     }
 
     fun init() {
+        Log.d("asdas", "INIT CALLED!!!")
         cedentials.selectedAccountName = accountName
         room?.let { view?.setRoom(it) }
         if (accountName == null) {
@@ -128,7 +145,9 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
         subscriptions.add(getUsersSingle.subscribe({
             view?.hideLoading()
             users = it
+            loadEvents()
         }, {
+            view?.hideLoading()
             view?.showError(it, ERROR_USERS)
         }))
     }
@@ -152,13 +171,16 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     }
 
     fun loadEvents() {
-        subscriptions.remove(eventsSubscription)
         eventsSubscription?.unsubscribe()
+        subscriptions.remove(eventsSubscription)
+
         if (eventObservable == null) {
             eventObservable = googleApiRepository.getEvents(room!!.resourceEmail)
         }
 
-        eventsSubscription = getEventsObservable.subscribe {
+        eventsSubscription = getEventsObservable.doOnUnsubscribe {
+            view?.hideLoading()
+        }.subscribe{
             view?.showEvents(it)
             view?.hideLoading()
         }
@@ -184,11 +206,26 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
         event.summary = eventName
         event.attendees = arrayListOf(EventAttendee().setEmail(room?.resourceEmail))
 
-        subscriptions.add(googleApiRepository.saveEvent(accountName, event).androidAsync().subscribe({
+        view?.addEvent(event)
+
+        adding = true
+
+        view?.showLoading(view?.string(MESSAGE_CREATE))
+        subscriptions.add(googleApiRepository.saveEvent(accountName, event).doOnSuccess {
+            //refreshEventsSubject.onNext(0L)
+        }.androidAsync().subscribe({
             view?.addEvent(event)
+            adding = false
         },{
+            adding = false
+            view?.hideLoading()
+            view?.removeEvent(event)
             view?.showError(it, ERROR_CREATE_EVENT)
         }))
+    }
+
+    init{
+
     }
 
 

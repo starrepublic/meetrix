@@ -94,6 +94,8 @@ class GoogleApiRepository @Inject constructor(val calendar:com.google.api.servic
 
     override fun getUsers(): Single<Map<String,User>> {
         return Single.create {
+
+
             try {
                 val users = directory.users().list().setCustomer("my_customer").execute().users
 
