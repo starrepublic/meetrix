@@ -201,7 +201,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
         val event:Event = Event()
         event.start = EventDateTime().setDateTime(DateTime(from))
         event.end = EventDateTime().setDateTime(DateTime(to))
-        event.creator = Event.Creator().setEmail(accountName)
+        event.creator = Event.Creator().setEmail(accountName).setDisplayName(accountName)
         event.location = room?.resourceName
         event.summary = eventName
         event.attendees = arrayListOf(EventAttendee().setEmail(room?.resourceEmail))
@@ -214,7 +214,6 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
         subscriptions.add(googleApiRepository.saveEvent(accountName, event).doOnSuccess {
             //refreshEventsSubject.onNext(0L)
         }.androidAsync().subscribe({
-            view?.addEvent(event)
             adding = false
         },{
             adding = false

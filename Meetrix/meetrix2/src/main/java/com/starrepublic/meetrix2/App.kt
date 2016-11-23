@@ -33,23 +33,3 @@ class App() : MultiDexApplication() {
     }
 }
 
-
-/*
-class App : Application(){
-
-
-
-    companion object{
-        lateinit var eventsRepositoryComponent: GoogleApiRepositoryComponent
-    }
-
-
-    override fun onCreate(){
-        super.onCreate()
-
-        eventsRepositoryComponent = DaggerEventsRepositoryComponent.builder().appModule(AppModule(this)).build();
-    }
-
-}*/
-
-

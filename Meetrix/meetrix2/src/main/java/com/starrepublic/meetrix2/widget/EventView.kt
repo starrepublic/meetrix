@@ -2,6 +2,7 @@ package com.starrepublic.meetrix2.widget;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.Color
 import android.os.Build;
 import android.util.AttributeSet;
 import android.widget.LinearLayout;
@@ -21,8 +22,8 @@ class EventView : LinearLayout {
     companion object {
         val DATE_FORMAT: SimpleDateFormat = SimpleDateFormat("HH:mm")
         val CALENDAR: Calendar = Calendar.getInstance()
-        val COLOR_DISABLED = 0x11000000
-        val COLOR_ENABLED = 0x33000000
+        val BACKGROUND_COLOR_ENABLED = 0xB3000000
+        val BACKGROUND_COLOR_DISABLED = 0x40000000
     }
 
 
@@ -40,6 +41,7 @@ class EventView : LinearLayout {
 
     var startMinutes: Float = 0F
     var endMinutes: Float = 0F
+    var expired: Boolean = false
 
     var event: Event? = null
         get() = field
@@ -50,7 +52,35 @@ class EventView : LinearLayout {
             txtTitle.text = event?.summary
             txtTimeSpan.text = DATE_FORMAT.format(Date(value?.start?.dateTime?.value ?: 0)) + " - "+ DATE_FORMAT.format(Date(value?.end?.dateTime?.value ?: 0))
             txtEventCreator.text = event?.creator?.displayName
-            refresh();
+            refresh()
+        }
+
+    fun refresh() {
+        if(event!=null&&event!!.end!=null&&event!!.start!=null) {
+            val now: Date = Date()
+            if (this.event!!.end.dateTime.value < now.time) {
+                this.alpha = 0.6f
+                textColor = Color.BLACK
+                this.setBackgroundColor(BACKGROUND_COLOR_DISABLED.toInt())
+                expired = true
+            } else {
+                this.setBackgroundColor(BACKGROUND_COLOR_ENABLED.toInt())
+                this.alpha = 1f
+                expired = false
+            }
+        }
+    }
+
+    var textColor: Int = Color.BLACK
+        get() = field
+        set(value) {
+            var color = Color.BLACK
+            if(!expired){
+                color = value
+            }
+            txtTitle.setTextColor(color)
+            txtEventCreator.setTextColor(color)
+            txtTimeSpan.setTextColor(color)
         }
 
     init {
@@ -64,7 +94,7 @@ class EventView : LinearLayout {
         val padding: Int = (resources.displayMetrics.density * 8).toInt();
         setPadding(padding, padding, padding, padding);
 
-        this.setBackgroundColor(COLOR_ENABLED)
+        this.setBackgroundColor(BACKGROUND_COLOR_ENABLED.toInt())
     }
 
     private fun toMinutes(datetime: DateTime?): Float {
@@ -72,16 +102,7 @@ class EventView : LinearLayout {
         return CALENDAR.get(Calendar.MINUTE) + (CALENDAR.get(Calendar.HOUR_OF_DAY) * 60f)
     }
 
-    fun refresh() {
-        if(event!=null&&event!!.end!=null&&event!!.start!=null) {
-            val now: Date = Date()
-            if (this.event!!.end.dateTime.value < now.time) {
-                this.alpha = 0.4f
-            } else {
-                this.alpha = 1f
-            }
-        }
-    }
+
 
 
 }

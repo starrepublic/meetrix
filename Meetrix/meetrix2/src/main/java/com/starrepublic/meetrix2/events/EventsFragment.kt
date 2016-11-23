@@ -2,6 +2,7 @@ package com.starrepublic.meetrix2.events
 
 import android.Manifest
 import android.accounts.AccountManager
+import android.animation.Animator
 import android.animation.ValueAnimator
 import android.app.Activity
 import android.content.BroadcastReceiver
@@ -55,6 +56,7 @@ import android.os.Build
 import android.util.SparseIntArray
 import android.view.*
 import android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
+import android.view.animation.Animation
 
 
 /**
@@ -195,6 +197,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         val dummyEvent = Event()
         dummyEvent.summary = getString(R.string.new_event)
         binding.viewNewEvent.event = dummyEvent
+        binding.viewNewEvent.textColor = colorAvailable
 
         binding.btnSettings.setOnClickListener {
             showSelectRoomDialog()
@@ -231,6 +234,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
                 binding.scrollview.smoothScrollBy(0,0)
 
+                binding.scrollview.scrollable = false
+
                 handler.removeCallbacks(resetTimeRunnable)
 
 
@@ -254,6 +259,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
             override fun onReleased(v: View, handle: Int) {
                 animateNewEvent(binding.layNewEvent.width, 0)
+                binding.scrollview.scrollable = true
                 resetTimeout()
             }
 
@@ -427,7 +433,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         return this
     }
 
-    override fun showEvents(events: List<Event>?) {
+    override fun showEvents(events: List<Event>) {
 
         eventViewList.forEach {
             binding.layoutEvents.removeView(it)
@@ -450,6 +456,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     private fun renderEvent(event: Event) {
         val eventView = EventView(context)
         eventView.event = event
+        eventView.textColor = if(roomEnabled) colorAvailable else colorUnavailable  //if(eventView.startMinutes / 60f <= selectedTimeInHours && eventView.endMinutes / 60f > selectedTimeInHours) colorUnavailable else colorAvailable
 
         eventViewList.add(eventView)
         val startHour: Float = eventView.startMinutes / 60f
@@ -548,6 +555,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
         idle = false
         val scrollSpeed = Math.abs(binding.scrollview.getScrollX() - lastScroll)
+
 
         lastScroll = binding.scrollview.getScrollX()
 
@@ -663,6 +671,11 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
     private fun updateBackgroundColor(color: Int) {
         if (color !== lastBgColor) {
+
+            eventViewList.forEach {
+                it.textColor = color
+            }
+
             backgroundAnimator = ObjectAnimator.ofObject(binding.root, "backgroundColor", ArgbEvaluator(), lastBgColor, color)
             backgroundAnimator?.interpolator = fastOutSlowInInterpolator
 
@@ -672,8 +685,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         }
     }
 
-    private fun animateViewTranslationX(view: View, translationX: Float) {
-        view.animate().translationX(translationX).setDuration(200).setInterpolator(fastOutSlowInInterpolator).start()
+    private fun animateViewTranslationX(view: View, translationX: Float, duration:Long = 200) {
+        view.animate().translationX(translationX).setDuration(duration).setInterpolator(fastOutSlowInInterpolator).start()
     }
 
 
@@ -695,6 +708,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
     override fun addEvent(event: Event) {
         renderEvent(event)
+        onScrollChanged()
     }
 
     override fun removeEvent(event: Event) {

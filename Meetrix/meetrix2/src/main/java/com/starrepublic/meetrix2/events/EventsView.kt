@@ -12,7 +12,7 @@ import com.starrepublic.meetrix2.mvp.BaseViewModel
  */
 interface EventsView : BaseViewModel {
 
-    fun showEvents(events:List<Event>?)
+    fun showEvents(events:List<Event>)
     fun showRooms(rooms: List<CalendarResource>)
     fun setRoom(room: CalendarResource)
     fun pickAccount(intent: Intent)
