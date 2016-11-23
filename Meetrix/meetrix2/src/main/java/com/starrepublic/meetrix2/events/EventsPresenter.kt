@@ -17,6 +17,7 @@ import com.starrepublic.meetrix2.data.GoogleApiRepository
 import com.starrepublic.meetrix2.mvp.BaseFragment
 import com.starrepublic.meetrix2.mvp.BasePresenter
 import com.starrepublic.meetrix2.mvp.BaseViewModel
+import com.starrepublic.meetrix2.utils.OperatorCountDownLatch
 import com.starrepublic.meetrix2.utils.Settings
 import com.starrepublic.meetrix2.utils.androidAsync
 import rx.Observable
@@ -42,15 +43,13 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                                           val googleApiRepository: GoogleApiRepository) : BasePresenter<EventsView>() {
 
 
-
-
     //messages
     val MESSAGE_USERS: Int = 1
     val MESSAGE_EVENTS: Int = 2
     val MESSAGE_CREATE: Int = 3
 
     //errors
-    val ERROR_CREATE_EVENT:Int = 96
+    val ERROR_CREATE_EVENT: Int = 96
     val ERROR_USERS: Int = 97
     val ERROR_ROOMS: Int = 98
     val ERROR_EVENTS: Int = 99
@@ -73,16 +72,17 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
 
     var users: Map<String, User> = emptyMap()
 
-    var adding:Boolean = false
+    var adding: Boolean = false
 
     private val refreshEventsSubject = PublishSubject<Long>()
-
     private var eventObservable: Observable<List<Event>>? = null
+    private val delayOperator = OperatorCountDownLatch<Long>(1)
 
 
-    private val getEventsObservable = Observable.merge(Observable.interval(0, 15, TimeUnit.SECONDS).filter {
-        !adding
-    }, refreshEventsSubject.delay(2, TimeUnit.SECONDS))
+    private val getEventsObservable = Observable.merge(Observable.interval(0, 15, TimeUnit.SECONDS),refreshEventsSubject)
+            .filter {
+                !adding
+            }.onBackpressureDrop()
             .doOnNext {
                 view?.showLoading(view?.string(MESSAGE_EVENTS))
             }
@@ -108,6 +108,9 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                     it.creator.displayName = users.get(it.creator.email)?.name?.fullName ?: event.creator.email
                 }
                 Observable.just(it)
+            }
+            .filter {
+                !adding
             }
             .androidAsync()
             .onErrorResumeNext {
@@ -180,7 +183,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
 
         eventsSubscription = getEventsObservable.doOnUnsubscribe {
             view?.hideLoading()
-        }.subscribe{
+        }.subscribe {
             view?.showEvents(it)
             view?.hideLoading()
         }
@@ -196,9 +199,9 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
         }))
     }
 
-    fun createEvent(eventName: String?, from: Date?, to: Date?, accountName: String){
+    fun createEvent(eventName: String?, from: Date?, to: Date?, accountName: String) {
 
-        val event:Event = Event()
+        val event: Event = Event()
         event.start = EventDateTime().setDateTime(DateTime(from))
         event.end = EventDateTime().setDateTime(DateTime(to))
         event.creator = Event.Creator().setEmail(accountName).setDisplayName(accountName)
@@ -215,7 +218,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
             //refreshEventsSubject.onNext(0L)
         }.androidAsync().subscribe({
             adding = false
-        },{
+        }, {
             adding = false
             view?.hideLoading()
             view?.removeEvent(event)
@@ -223,7 +226,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
         }))
     }
 
-    init{
+    init {
 
     }
 

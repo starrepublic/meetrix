@@ -50,6 +50,8 @@ import com.google.api.services.calendar.model.EventDateTime
 import com.starrepublic.meetrix2.widget.EventView
 import android.animation.ObjectAnimator
 import android.animation.ArgbEvaluator
+import android.media.AudioManager
+import android.media.MediaPlayer
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION
 import android.os.Build
@@ -116,10 +118,19 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     private var colorAvailable: Int = 0
     private var colorUnavailable: Int = 0
 
+    private lateinit var soundCreate: MediaPlayer
+    private lateinit var soundSnap: MediaPlayer
+    private lateinit var soundRelease: MediaPlayer
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         retainInstance = true
+
+
+        soundCreate = MediaPlayer.create(context,R.raw.chime_dim2);
+        soundSnap = MediaPlayer.create(context,R.raw.click_04);
+        soundRelease = MediaPlayer.create(context,R.raw.pop_char);
 
         fastOutSlowInInterpolator = LUtils.loadInterpolatorWithFallback(context, android.R.interpolator.fast_out_slow_in, android.R.interpolator.decelerate_cubic)
         reverseFastOutSlowInInterpolator = ReverseInterpolator(fastOutSlowInInterpolator)
@@ -133,6 +144,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         fadeInAnimation.duration = 400
         fadeInAnimation.isFillEnabled = true
         fadeInAnimation.fillAfter = true
+
+
 
 
         val resources = context.resources;
@@ -197,7 +210,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         val dummyEvent = Event()
         dummyEvent.summary = getString(R.string.new_event)
         binding.viewNewEvent.event = dummyEvent
-        binding.viewNewEvent.textColor = colorAvailable
 
         binding.btnSettings.setOnClickListener {
             showSelectRoomDialog()
@@ -238,9 +250,12 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
                 handler.removeCallbacks(resetTimeRunnable)
 
+                v.playSoundEffect(SoundEffectConstants.CLICK)
+
 
                 val glowPad = v as GlowPadView
                 binding.layNewEvent.visibility = View.VISIBLE
+
 
 
 
@@ -260,6 +275,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             override fun onReleased(v: View, handle: Int) {
                 animateNewEvent(binding.layNewEvent.width, 0)
                 binding.scrollview.scrollable = true
+
                 resetTimeout()
             }
 
@@ -267,6 +283,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
                 binding.layNewEvent.visibility = View.GONE
                 val time = targetToTime(target)
                 showNewEventDialog(time)
+                soundRelease.start()
             }
 
             override fun onGrabbedStateChange(v: View, handle: Int) {
@@ -286,12 +303,17 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             }
 
             override fun onSnapped(v: View, target: Int) {
+
+
+                soundSnap.start()
+
                 val time = targetToTime(target)
 
                 val event = binding.viewNewEvent.event
                 event?.start = EventDateTime().setDateTime(DateTime(selectedTimeToDate()))
                 event?.end = EventDateTime().setDateTime(DateTime(selectedTimeToDate().time + time.toLong() * 60L * 1000L))
                 binding.viewNewEvent.event = event
+                binding.viewNewEvent.textColor = colorAvailable
 
                 animateNewEvent(binding.layNewEvent.width, (time.toFloat() / 60f * timeWidth.toFloat()).toInt())
             }
@@ -453,7 +475,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
     }
 
-    private fun renderEvent(event: Event) {
+    private fun renderEvent(event: Event):EventView {
         val eventView = EventView(context)
         eventView.event = event
         eventView.textColor = if(roomEnabled) colorAvailable else colorUnavailable  //if(eventView.startMinutes / 60f <= selectedTimeInHours && eventView.endMinutes / 60f > selectedTimeInHours) colorUnavailable else colorAvailable
@@ -465,6 +487,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         eventViewParams.leftMargin = (startHour * timeWidth).toInt()
         eventViewParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 1)
         binding.layoutEvents.addView(eventView, eventViewParams)
+        return eventView
 
     }
 
@@ -524,6 +547,9 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
     override fun onStop() {
         super.onStop()
+        soundCreate.release()
+        soundRelease.release()
+        soundSnap.release()
         if (broadcastReceiver != null) {
             activity.unregisterReceiver(broadcastReceiver)
         }
@@ -707,8 +733,12 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     override fun addEvent(event: Event) {
-        renderEvent(event)
+        soundCreate.start()
+        val eventView = renderEvent(event)
+        eventView.translationY = eventHeight.toFloat()
+        eventView.animate().translationY(0f).setInterpolator(fastOutSlowInInterpolator).setStartDelay(200).setDuration(400).start()
         onScrollChanged()
+
     }
 
     override fun removeEvent(event: Event) {
