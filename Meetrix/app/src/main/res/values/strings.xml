@@ -3,4 +3,15 @@
 
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
+
+
+    <string name="select_room">Select room</string>
+    <string name="loading_users">Loading users</string>
+    <string name="loading_events">Updating</string>
+    <string name="event_name">Event name</string>
+    <string name="new_event">New event</string>
+    <string name="create">Create</string>
+    <string name="cancel">Cancel</string>
+    <string name="to">to</string>
+    <string name="error">Unable to load data</string>
 </resources>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="com.starrepublic.meetrix.events.NewEventDialogViewModel" />
+
+    </data>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+
+        <EditText
+            android:id="@+id/txt_event_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:ems="10"
+            android:hint="@string/event_name"
+            android:inputType="textPersonName"
+            android:text="@={viewModel.eventName}"
+            android:imeOptions="actionDone"
+            android:textSize="34sp" />
+
+
+        <EditText
+            android:id="@+id/txt_time_from"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/txt_event_name"
+            android:width="112dp"
+            android:ems="10"
+            tools:text="15:00"
+            android:hint="@{viewModel.from}"
+            android:inputType="time"
+            android:text="@={viewModel.from}"
+            android:textSize="18sp"
+            android:visibility="gone"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/txt_to"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/txt_event_name"
+            android:layout_margin="8dp"
+            android:visibility="gone"
+            android:layout_toRightOf="@id/txt_time_from"
+            android:text="@string/to" />
+
+        <EditText
+            android:id="@+id/txt_time_to"
+            android:layout_width="112dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/txt_event_name"
+            android:layout_toRightOf="@id/txt_to"
+            android:ems="10"
+            android:visibility="gone"
+            tools:text="16:00"
+            android:hint="@{viewModel.to}"
+            android:inputType="time"
+            android:text="@={viewModel.to}"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+
+    </RelativeLayout>
+</layout>

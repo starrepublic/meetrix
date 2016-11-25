@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="@dimen/time_width"
     android:layout_height="@dimen/time_height">
 
@@ -11,7 +12,7 @@
         android:id="@+id/txt_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="14:00"
+        tools:text="14:00"
         android:textSize="16sp" />
 
 

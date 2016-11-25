@@ -1,1 +1,1 @@
-include ':app', ':glowpadview', ':meetrix2'
+include ':glowpadview', ':app'

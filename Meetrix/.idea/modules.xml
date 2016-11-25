@@ -5,7 +5,6 @@
       <module fileurl="file://$PROJECT_DIR$/Meetrix.iml" filepath="$PROJECT_DIR$/Meetrix.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/glowpadview/glowpadview.iml" filepath="$PROJECT_DIR$/glowpadview/glowpadview.iml" />
-      <module fileurl="file://$PROJECT_DIR$/meetrix2/meetrix2.iml" filepath="$PROJECT_DIR$/meetrix2/meetrix2.iml" />
     </modules>
   </component>
 </project>
