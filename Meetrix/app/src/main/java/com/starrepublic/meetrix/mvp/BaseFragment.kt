@@ -12,6 +12,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.starrepublic.meetrix.R
@@ -60,7 +61,7 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
     abstract fun getViewId(): Int
 
     override fun showToast(message: String) {
-
+        Toast.makeText(context,message,Toast.LENGTH_LONG).show()
     }
 
     override fun showSnackbar(message: String) {

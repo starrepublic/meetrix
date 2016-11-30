@@ -783,7 +783,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     private fun animateViewTranslationX(view: View, translationX: Float, duration: Long = 200) {
-        view.animate().translationX(translationX).setDuration(duration).setInterpolator(fastOutSlowInInterpolator).start()
+        view.animate().withLayer().translationX(translationX).setDuration(duration).setInterpolator(fastOutSlowInInterpolator).start()
     }
 
 
@@ -807,12 +807,37 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         soundCreate.start()
         val eventView = renderEvent(event)
         eventView.translationY = eventHeight.toFloat()
-        eventView.animate().translationY(0f).setInterpolator(fastOutSlowInInterpolator).setStartDelay(200).setDuration(400).start()
+        eventView.animate().translationY(0f).setInterpolator(fastOutSlowInInterpolator).setStartDelay(200).setDuration(400).withLayer().start()
         onScrollChanged()
 
     }
 
     override fun removeEvent(event: Event) {
+        val eventView = eventViewList.find({
+            it.event?.id == event.id
+        })
+        if(eventView!=null){
+            eventView.animate().translationY(eventHeight.toFloat()).setInterpolator(fastOutSlowInInterpolator).setDuration(400).setListener(object :Animator.AnimatorListener{
+                override fun onAnimationRepeat(p0: Animator?) {
+
+                }
+
+                override fun onAnimationEnd(p0: Animator?) {
+                    eventViewList.remove(eventView)
+                    binding.layoutEvents.removeView(eventView)
+                }
+
+                override fun onAnimationCancel(p0: Animator?) {
+
+                }
+
+                override fun onAnimationStart(p0: Animator?) {
+
+                }
+
+            }).withLayer().start()
+        }
+
 
     }
 

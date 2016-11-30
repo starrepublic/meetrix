@@ -17,15 +17,15 @@ import com.starrepublic.meetrix.data.GoogleApiRepository
 import com.starrepublic.meetrix.mvp.BaseFragment
 import com.starrepublic.meetrix.mvp.BasePresenter
 import com.starrepublic.meetrix.mvp.BaseViewModel
-import com.starrepublic.meetrix.utils.OperatorCountDownLatch
-import com.starrepublic.meetrix.utils.Settings
-import com.starrepublic.meetrix.utils.androidAsync
+import com.starrepublic.meetrix.utils.*
 import rx.Observable
 import rx.Single
 import rx.Subscription
+import rx.functions.Action1
 import rx.internal.util.SubscriptionList
 import rx.lang.kotlin.BehaviorSubject
 import rx.lang.kotlin.PublishSubject
+import rx.lang.kotlin.onErrorReturnNull
 import rx.lang.kotlin.switchOnNext
 import rx.subjects.PublishSubject
 import rx.subjects.Subject
@@ -74,22 +74,26 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     var adding: Boolean = false
 
     private val refreshEventsSubject = PublishSubject<Long>()
-    private val delayOperator = OperatorCountDownLatch<Long>(1)
 
 
     private val getRoomsSingle = googleApiRepository.getRooms().androidAsync()
     private val getUsersSingle = googleApiRepository.getUsers().androidAsync()
     private var subscriptions: SubscriptionList = SubscriptionList()
     private var eventsSubscription: Subscription? = null
-    private var eventObservable = Observable.merge(Observable.interval(0, 15, TimeUnit.SECONDS), refreshEventsSubject)
-            .filter {
-                !adding
-            }.onBackpressureDrop()
+    private var loadingEvents: Boolean = false
+    private var eventObservable = Observable.merge(Observable.interval(0,15,TimeUnit.SECONDS).filter {
+                !loadingEvents
+            }, refreshEventsSubject)
+            .filter { !adding }
             .doOnNext {
                 view?.showLoading(view?.string(MESSAGE_EVENTS))
             }
-            .flatMap { googleApiRepository.getEvents(room!!.resourceEmail) }
             .flatMap {
+                loadingEvents = true
+                googleApiRepository.getEvents(room!!.resourceEmail).retryWithDelay(3,3)
+            }
+            .flatMap {
+                loadingEvents = false
                 val events = it
                 it.forEach {
                     if (users.contains(it.creator.email)) {
@@ -111,18 +115,8 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                 }
                 Observable.just(it)
             }
-            .filter {
-                !adding
-            }
+            .filter { !adding }
             .androidAsync()
-            .onErrorResumeNext {
-                view?.showError(it, ERROR_EVENTS)
-                view?.hideLoading()
-                Observable.empty()
-            }
-            .doOnCompleted {
-                Log.d("tasfaf","asfasf")
-            }
             .doOnUnsubscribe {
                 view?.hideLoading()
             }
@@ -132,7 +126,6 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     }
 
     fun init() {
-        Log.d("asdas", "INIT CALLED!!!")
         cedentials.selectedAccountName = accountName
         room?.let { view?.setRoom(it) }
         if (accountName == null) {
@@ -180,13 +173,34 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     fun loadEvents() {
 
         eventsSubscription?.unsubscribe()
-
-        //subscriptions.remove(eventsSubscription)
-
-        eventsSubscription = eventObservable.subscribe {
-            view?.showEvents(it)
-            view?.hideLoading()
+        if(eventsSubscription != null && eventsSubscription!!.isUnsubscribed){
+            eventsSubscription = null
+            subscriptions.remove(eventsSubscription)
         }
+
+
+        if(subscriptions.isUnsubscribed){
+            subscriptions = SubscriptionList()
+        }
+
+        loadingEvents = false
+
+
+
+
+        eventsSubscription = eventObservable.subscribe({
+            if (it != null) {
+                view?.showEvents(it)
+            }
+            view?.hideLoading()
+        }, {
+            view?.showError(it, ERROR_EVENTS)
+            view?.hideLoading()
+            loadEvents()
+
+        }, {
+            Log.d("asfasf", "asfasfasf")
+        })
         subscriptions.add(eventsSubscription)
     }
 
@@ -229,6 +243,4 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     init {
 
     }
-
-
 }
