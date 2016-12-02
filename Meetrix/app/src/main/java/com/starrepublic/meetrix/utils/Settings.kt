@@ -25,7 +25,7 @@ class Settings(val context: Context) {
 
     init{
         preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        editor = preferences.edit();
+        editor = preferences.edit()
 
     }
 

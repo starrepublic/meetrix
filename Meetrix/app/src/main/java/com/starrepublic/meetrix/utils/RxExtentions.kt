@@ -35,10 +35,11 @@ fun <T> Observable<T>.onErrorSuppress(action: (e: Throwable?) -> Unit): Observab
 
 fun <T> Observable<T>.retryWithDelay(count: Int, power: Long): Observable<T> {
 
-    return retryWhen { errors ->
-        errors
-                .zipWith(Observable.range(1, count).materialize()) { n, i -> Pair(n, i) }
+    return retryWhen {
+        it.zipWith(Observable.range(1, count).materialize()) { n, i -> Pair(n, i) }
                 .flatMap {
+
+
                     if (it.second.isOnCompleted()) Observable.error(it.first) else Observable.timer(Math.pow(power.toDouble(), it.second.value.toDouble()).toLong(), TimeUnit.SECONDS)
                 }
     }

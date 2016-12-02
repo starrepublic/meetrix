@@ -19,12 +19,12 @@
         android:layout_height="match_parent"
         android:background="@color/available">
 
-        <ImageView
+        <!--<ImageView
             android:layout_centerInParent="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_logo"
-            />
+            />-->
 
         <View
             android:id="@+id/view_current_timeline"

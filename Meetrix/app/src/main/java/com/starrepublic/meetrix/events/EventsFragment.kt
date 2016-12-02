@@ -35,7 +35,6 @@ import com.starrepublic.meetrix.mvp.BaseFragment
 import com.starrepublic.meetrix.mvp.BaseViewModel
 import com.starrepublic.meetrix.utils.LUtils
 import com.starrepublic.meetrix.utils.ReverseInterpolator
-import com.starrepublic.meetrix.utils.Utils
 import com.starrepublic.meetrix.utils.dpToPx
 import com.starrepublic.meetrix.widget.TimeView
 import timber.log.Timber

@@ -199,7 +199,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
             loadEvents()
 
         }, {
-            Log.d("asfasf", "asfasfasf")
+
         })
         subscriptions.add(eventsSubscription)
     }
