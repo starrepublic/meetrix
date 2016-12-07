@@ -83,12 +83,40 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         val REQUEST_ACCOUNT_PICKER = 1000
     }
 
-    override fun pickAccount(intent: Intent) {
-        startActivityForResult(intent, REQUEST_ACCOUNT_PICKER, null)
-    }
-
+    private var accountPickerShown: Boolean = false
     private var vm: EventsViewModel = EventsViewModel()
-    private var broadcastReceiver: BroadcastReceiver? = null
+    private val receiverTick: BroadcastReceiver? = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context, intent: Intent) {
+            if (intent.action.compareTo(Intent.ACTION_TIME_TICK) == 0) {
+                updateTime()
+                if (idle) {
+                    resetTimeline(true)
+                }
+
+            }
+        }
+    }
+    private val receiverPower = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+
+
+            val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+            val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
+
+            val flagScreenOn = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+            if (isCharging) {
+                activity.window.addFlags(flagScreenOn)
+                wakeDevice()
+
+            } else {
+                activity.window.clearFlags(flagScreenOn)
+            }
+
+            val chargePlug = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
+            val usbCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_USB
+            val acCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_AC
+        }
+    }
     private val handler = Handler()
     private var timeWidth: Int = 0
     private var timeHeight: Int = 0
@@ -98,8 +126,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     private val fadeInAnimation = AlphaAnimation(0f, 1f)
     private var backgroundAnimator: ObjectAnimator? = null
     private var lastBgColor: Int = 0
-
-
     private var fastOutSlowInInterpolator: Interpolator? = null
     private var reverseFastOutSlowInInterpolator: Interpolator? = null
     private var resetTimeRunnable: Runnable = Runnable {
@@ -125,7 +151,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
     private var colorAvailable: Int = 0
     private var colorUnavailable: Int = 0
-
     private lateinit var soundCreate: MediaPlayer
     private lateinit var soundSnap: MediaPlayer
     private lateinit var soundRelease: MediaPlayer
@@ -136,31 +161,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
         retainInstance = true
 
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(ACTION_POWER_CONNECTED)
-        intentFilter.addAction(ACTION_POWER_DISCONNECTED)
-
-        context.registerReceiver(object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-
-
-                val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-                val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
-
-                val flagScreenOn = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                if (isCharging) {
-                    activity.window.addFlags(flagScreenOn)
-                    wakeDevice()
-
-                } else {
-                    activity.window.clearFlags(flagScreenOn)
-                }
-
-                val chargePlug = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
-                val usbCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_USB
-                val acCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_AC
-            }
-        }, intentFilter)
 
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         fullWakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "MEETRIX - FULL WAKE LOCK")
@@ -198,6 +198,13 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         }
     }
 
+    override fun pickAccount(intent: Intent) {
+        if (!accountPickerShown) {
+            accountPickerShown = true
+            startActivityForResult(intent, REQUEST_ACCOUNT_PICKER, null)
+        }
+    }
+
     override fun requirePermissions(): Array<String> {
         return arrayOf(Manifest.permission.GET_ACCOUNTS)
     }
@@ -217,12 +224,14 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         super.onActivityResult(requestCode, resultCode, data)
 
         when (requestCode) {
-            REQUEST_ACCOUNT_PICKER -> if (resultCode === Activity.RESULT_OK && data != null &&
-                    data.extras != null) {
-                val accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
+            REQUEST_ACCOUNT_PICKER -> {
+                accountPickerShown = false
+                if (resultCode === Activity.RESULT_OK && data != null && data.extras != null) {
+                    val accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
 
-                presenter?.accountName = accountName
-                presenter?.init()
+                    presenter?.accountName = accountName
+                    presenter?.init()
+                }
             }
             presenter?.ERROR_ROOMS -> {
                 showSelectRoomDialog()
@@ -244,7 +253,14 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
     override fun createView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
 
-        binding = DataBindingUtil.inflate<FragmentEventsBinding>(inflater!!, getViewId(), container!!, false);
+
+        timeViews.clear()
+        eventViewList.clear()
+        roomEnabled = true
+        lastHour = -1
+        lastBgColor = 0
+
+        binding = DataBindingUtil.inflate<FragmentEventsBinding>(inflater!!, getViewId(), container!!, false)
 
         binding.setVariable(BR.viewModel, vm);
 
@@ -401,6 +417,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
 
 
+
         binding.layoutEvents.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
                 resetTimeline(false)
@@ -476,9 +493,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         }
 
         resetTimeout()
-
-
     }
+
 
     fun isCharging(): Boolean {
         val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
@@ -533,9 +549,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         eventViewList.clear()
 
 
-
-
-
         events?.forEach {
             renderEvent(it)
         }
@@ -570,19 +583,14 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
     override fun onStart() {
         super.onStart()
-        broadcastReceiver = object : BroadcastReceiver() {
-            override fun onReceive(ctx: Context, intent: Intent) {
-                if (intent.action.compareTo(Intent.ACTION_TIME_TICK) == 0) {
-                    updateTime()
-                    if (idle) {
-                        resetTimeline(true)
-                    }
 
-                }
-            }
-        }
 
-        activity.registerReceiver(broadcastReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
+        val intentFilterPower = IntentFilter()
+        intentFilterPower.addAction(ACTION_POWER_CONNECTED)
+        intentFilterPower.addAction(ACTION_POWER_DISCONNECTED)
+
+        context.registerReceiver(receiverTick, IntentFilter(Intent.ACTION_TIME_TICK))
+        context.registerReceiver(receiverPower, intentFilterPower)
     }
 
     private fun updateTime() {
@@ -612,6 +620,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(resetTimeRunnable)
+
         soundCreate.release()
         soundRelease.release()
         soundSnap.release()
@@ -620,8 +629,9 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     override fun onStop() {
         super.onStop()
 
-        if (broadcastReceiver != null) {
-            activity.unregisterReceiver(broadcastReceiver)
+        if (receiverTick != null) {
+            context.unregisterReceiver(receiverTick)
+            context.unregisterReceiver(receiverPower)
         }
     }
 
@@ -815,8 +825,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         val eventView = eventViewList.find({
             it.event?.id == event.id
         })
-        if(eventView!=null){
-            eventView.animate().translationY(eventHeight.toFloat()).setInterpolator(fastOutSlowInInterpolator).setDuration(400).setListener(object :Animator.AnimatorListener{
+        if (eventView != null) {
+            eventView.animate().translationY(eventHeight.toFloat()).setInterpolator(fastOutSlowInInterpolator).setDuration(400).setListener(object : Animator.AnimatorListener {
                 override fun onAnimationRepeat(p0: Animator?) {
 
                 }

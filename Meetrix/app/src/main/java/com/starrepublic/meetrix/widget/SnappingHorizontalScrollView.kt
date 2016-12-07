@@ -50,7 +50,7 @@ class SnappingHorizontalScrollView : HorizontalScrollView {
 
     private fun scrollStopped() {
         if (snappingEnabled) {
-            handler.post {
+            handler?.post {
                 smoothScrollTo(snapTo * Math.round(scrollX / snapTo.toFloat()), 0)
             }
 

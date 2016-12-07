@@ -50,6 +50,16 @@ class SelectRoomDialogFragment : BaseDialogFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        retainInstance = true
+    }
+
+    override fun onDestroyView() {
+        val dialog = dialog
+        // handles https://code.google.com/p/android/issues/detail?id=17423
+        if (dialog != null && retainInstance) {
+            dialog.setDismissMessage(null)
+        }
+        super.onDestroyView()
     }
 
     override fun onResume() {

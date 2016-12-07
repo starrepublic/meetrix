@@ -106,6 +106,15 @@ class NewEventDialogFragment : BaseDialogFragment() {
         fragment.presenter?.createEvent(vm.eventName,from,to,fragment.presenter?.accountName!!)
     }
 
+    override fun onDestroyView() {
+        val dialog = dialog
+        // handles https://code.google.com/p/android/issues/detail?id=17423
+        if (dialog != null && retainInstance) {
+            dialog.setDismissMessage(null)
+        }
+        super.onDestroyView()
+    }
+
     override fun onDismiss(dialog: DialogInterface?) {
         super.onDismiss(dialog)
         fragment.dismissedDialog(this);
