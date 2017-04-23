@@ -25,13 +25,10 @@ import android.view.inputmethod.EditorInfo.IME_ACTION_DONE
 import android.view.inputmethod.EditorInfo
 
 
-
-
 /**
  * Created by richard on 2016-11-12.
  */
 class NewEventDialogFragment : BaseDialogFragment() {
-
 
     companion object {
         val DATE_FORMAT: SimpleDateFormat = SimpleDateFormat("HH:mm")
@@ -39,12 +36,13 @@ class NewEventDialogFragment : BaseDialogFragment() {
         val EXTRA_TO: String = "extra_to"
 
         fun newInstance(from: Date, to: Date): NewEventDialogFragment {
-
             val fragment = NewEventDialogFragment()
 
             val args = Bundle()
+
             args.putLong(EXTRA_FROM, from.time)
             args.putLong(EXTRA_TO, to.time)
+
             fragment.arguments = args
 
             return fragment
@@ -68,7 +66,6 @@ class NewEventDialogFragment : BaseDialogFragment() {
 
     private lateinit var binding: DialogNewEventBinding
 
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
 
         binding = DataBindingUtil.inflate<DialogNewEventBinding>(LayoutInflater.from(context), R.layout.dialog_new_event, null, false);
@@ -83,27 +80,37 @@ class NewEventDialogFragment : BaseDialogFragment() {
             }
             handled
         })
+
         vm.from = DATE_FORMAT.format(from)
         vm.to = DATE_FORMAT.format(to)
 
+        vm.eventName = getString(R.string.event_name_default_value)
+
         binding.setVariable(BR.viewModel, vm)
 
-
-        return AlertDialog.Builder(context)
+        var dialog = AlertDialog.Builder(context)
                 .setTitle(R.string.new_event)
                 .setPositiveButton(R.string.create,
-                        { dialog, whichButton ->
-                            createEvent()
-                        }
+                    { dialog, whichButton ->
+                        createEvent()
+                    }
                 )
                 .setView(binding.root)
-                .setNegativeButton(R.string.cancel
-                ) { dialog, whichButton -> dialog.dismiss() }
+                .setNegativeButton(R.string.cancel)
+                { dialog, whichButton ->
+                    dialog.dismiss()
+                }
                 .create()
+
+        if (!vm.eventName.isNullOrBlank()) {
+            dialog.setOnShowListener { binding.txtEventName.selectAll() }
+        }
+
+        return dialog
     }
 
     private fun createEvent() {
-        fragment.presenter?.createEvent(vm.eventName,from,to,fragment.presenter?.accountName!!)
+        fragment.presenter?.createEvent(vm.eventName, from, to, fragment.presenter?.accountName!!)
     }
 
     override fun onDestroyView() {
