@@ -38,9 +38,7 @@ fun <T> Observable<T>.retryWithDelay(count: Int, power: Long): Observable<T> {
     return retryWhen {
         it.zipWith(Observable.range(1, count).materialize()) { n, i -> Pair(n, i) }
                 .flatMap {
-
-
-                    if (it.second.isOnCompleted()) Observable.error(it.first) else Observable.timer(Math.pow(power.toDouble(), it.second.value.toDouble()).toLong(), TimeUnit.SECONDS)
+                    if (it.second.isOnCompleted) Observable.error(it.first) else Observable.timer(Math.pow(power.toDouble(), it.second.value.toDouble()).toLong(), TimeUnit.SECONDS)
                 }
     }
 

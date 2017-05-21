@@ -14,30 +14,22 @@ import android.os.Bundle
 import android.os.Handler
 import android.support.v4.app.DialogFragment
 import android.support.v4.content.ContextCompat
-import android.support.v7.app.AlertDialog
-import android.util.Log
-import android.util.SparseArray
 import android.view.animation.AlphaAnimation
 import android.view.animation.Interpolator
-import android.widget.ArrayAdapter
 import android.widget.RelativeLayout
 import com.android.keyguard.widget.GlowPadView
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException
-import com.google.api.services.admin.directory.Directory
 import com.google.api.services.admin.directory.model.CalendarResource
 import com.google.api.services.calendar.model.Event
 import com.starrepublic.meetrix.BR
 import com.starrepublic.meetrix.R
-import com.starrepublic.meetrix.databinding.DialogSelectRoomBinding
 import com.starrepublic.meetrix.databinding.FragmentEventsBinding
 import com.starrepublic.meetrix.injections.AppComponent
 import com.starrepublic.meetrix.mvp.BaseFragment
-import com.starrepublic.meetrix.mvp.BaseViewModel
 import com.starrepublic.meetrix.utils.LUtils
 import com.starrepublic.meetrix.utils.ReverseInterpolator
 import com.starrepublic.meetrix.utils.dpToPx
 import com.starrepublic.meetrix.widget.TimeView
-import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -51,22 +43,12 @@ import android.animation.ObjectAnimator
 import android.animation.ArgbEvaluator
 import android.content.Intent.ACTION_POWER_CONNECTED
 import android.content.Intent.ACTION_POWER_DISCONNECTED
-import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.BatteryManager
-import android.os.Build.VERSION.SDK_INT
-import android.os.Build.VERSION
 import android.os.Build
-import android.util.SparseIntArray
 import android.view.*
-import android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
-import android.view.animation.Animation
-import android.os.BatteryManager.EXTRA_PLUGGED
 import android.app.KeyguardManager
-import android.content.Context.KEYGUARD_SERVICE
-import android.app.KeyguardManager.KeyguardLock
 import android.os.PowerManager
-import android.content.Context.POWER_SERVICE
 
 
 /**
@@ -180,7 +162,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         fadeInAnimation.fillAfter = true
 
 
-        val resources = context.resources;
+        val resources = context.resources
 
         colorAvailable = ContextCompat.getColor(context, R.color.available)
         colorUnavailable = ContextCompat.getColor(context, R.color.unavailable)
@@ -206,7 +188,10 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     override fun requirePermissions(): Array<String> {
-        return arrayOf(Manifest.permission.GET_ACCOUNTS)
+        return arrayOf(
+                Manifest.permission.ACCESS_WIFI_STATE,
+                Manifest.permission.GET_ACCOUNTS,
+                Manifest.permission.CHANGE_WIFI_STATE)
     }
 
     override fun showSelectRoomDialog() {
@@ -306,8 +291,13 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
                 binding.scrollview.smoothScrollBy(0, 0)
 
-                binding.scrollview.scrollable = false
 
+                /*
+                 binding.scrollview.scrollStopped()
+                val snapTo = (timeWidth / 4f)
+                selectedTimeInHours =  (snapTo * Math.round(binding.scrollview.scrollX / snapTo)) / timeWidth.toFloat()*/
+
+                binding.scrollview.scrollable = false
                 handler.removeCallbacks(resetTimeRunnable)
 
                 v.playSoundEffect(SoundEffectConstants.CLICK)
@@ -390,10 +380,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             }
         })
 
-
-
-
-
         calendar.set(Calendar.MINUTE, 0)
         calendar.set(Calendar.SECOND, 0)
         calendar.set(Calendar.MILLISECOND, 0)
@@ -414,9 +400,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             timeViews.add(timeView)
 
         }
-
-
-
 
         binding.layoutEvents.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
@@ -465,6 +448,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         val newEventDialogFragent = NewEventDialogFragment.newInstance(from, to)
         newEventDialogFragent.setTargetFragment(this, 0)
         newEventDialogFragent.show(fragmentManager, "new_event_dialog_fragment")
+
+        //(activity as? EventsActivity)?.toggleImersiveMode(true)
 
 
     }
@@ -521,13 +506,15 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
                 startActivityForResult(error.intent, code)
             }
             is GoogleJsonResponseException -> {
-                if (code == presenter?.ERROR_USERS) {
-                    presenter?.loadEvents()
-                }
+
             }
             else -> {
                 showToast(getString(R.string.error))
             }
+        }
+
+        if (code == presenter?.ERROR_USERS) {
+            presenter?.loadEvents()
         }
     }
 
@@ -549,7 +536,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         eventViewList.clear()
 
 
-        events?.forEach {
+        events.forEach {
             renderEvent(it)
         }
 
@@ -560,7 +547,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     private fun renderEvent(event: Event): EventView {
         val eventView = EventView(context)
         eventView.event = event
-        eventView.textColor = if (roomEnabled) colorAvailable else colorUnavailable  //if(eventView.startMinutes / 60f <= selectedTimeInHours && eventView.endMinutes / 60f > selectedTimeInHours) colorUnavailable else colorAvailable
+        eventView.textColor = if (roomEnabled) colorAvailable else colorUnavailable
 
         eventViewList.add(eventView)
         val startHour: Float = eventView.startMinutes / 60f
@@ -776,7 +763,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     private fun updateBackgroundColor(color: Int) {
-        if (color !== lastBgColor) {
+        if (color != lastBgColor) {
 
             eventViewList.forEach {
                 it.textColor = color
@@ -793,15 +780,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
     private fun animateViewTranslationX(view: View, translationX: Float, duration: Long = 200) {
         view.animate().withLayer().translationX(translationX).setDuration(duration).setInterpolator(fastOutSlowInInterpolator).start()
-    }
-
-
-    override fun string(messageId: Int): String? {
-        when (messageId) {
-            presenter?.MESSAGE_USERS -> return getString(R.string.loading_users)
-            presenter?.MESSAGE_EVENTS -> return getString(R.string.loading_events)
-        }
-        return null
     }
 
     override fun showLoading(message: String?) {
@@ -846,8 +824,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
             }).withLayer().start()
         }
-
-
     }
 
     fun dismissedDialog(dialog: DialogFragment) {

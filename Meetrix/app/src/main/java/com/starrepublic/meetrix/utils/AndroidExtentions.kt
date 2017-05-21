@@ -1,5 +1,7 @@
 package com.starrepublic.meetrix.utils
 
+import android.R
+import android.annotation.TargetApi
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -11,33 +13,77 @@ import android.os.Build
 import android.provider.Settings
 import android.support.annotation.IdRes
 import android.support.design.widget.Snackbar
+import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
 import android.support.v4.content.ContextCompat
-import android.view.LayoutInflater
-import android.view.View
+import android.support.v4.view.WindowInsetsCompat
+import android.view.*
 import android.widget.Toast
 import com.starrepublic.meetrix.App
 import com.starrepublic.meetrix.injections.AppComponent
 import java.util.*
+import android.animation.ValueAnimator
+import android.view.animation.DecelerateInterpolator
 
 
 @Suppress("UNCHECKED_CAST")
-fun <T : View> View.findViewByIdTyped(@IdRes id:Int):T {
+fun <T : View> View.findViewByIdTyped(@IdRes id: Int): T {
     return findViewById(id) as T
 }
 
+fun DialogFragment.setImmersiveMode(immersive: Boolean) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        activity.window.decorView.rootView.setOnApplyWindowInsetsListener(object : View.OnApplyWindowInsetsListener{
 
-fun FragmentActivity.addFragmentToActivity(fragment: Fragment?, frameId:Int){
-    val transaction = supportFragmentManager.beginTransaction()
-    transaction.add(frameId,fragment)
-    transaction.commit()
+            @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+            override fun onApplyWindowInsets(v: View?, insets: WindowInsets?): WindowInsets {
+                val bottomInset = insets!!.systemWindowInsetBottom
 
+                if (context != null && bottomInset > context.getNavigationBarHeight()) {
+                    val screenHeight = context.resources.displayMetrics.heightPixels.toFloat()
+                    var statusBarHeight = context.getStatusBarHeight()
+                    val availableSpace = screenHeight - (bottomInset-context.getNavigationBarHeight()) - statusBarHeight
+
+                    val window = dialog.window
+                    val dialogRootView = window.decorView.findViewById(android.R.id.content)
+                    if (availableSpace > dialogRootView.height) {
+                        val p = window.attributes
+                        val targetOffset = (((availableSpace / 2f )) / (screenHeight))
+
+                        val va = ValueAnimator.ofFloat(0f, -0.5f+targetOffset)
+                        va.duration = 300
+                        va.interpolator = DecelerateInterpolator()
+                        va.addUpdateListener { animation ->
+                            val value = animation.animatedValue as Float
+                            p.verticalMargin = value
+                            window.attributes = p
+                        }
+                        va.start()
+                    }
+                }
+                return insets
+            }
+        })
+    }
 }
 
-fun ContextCompat.checkSelfPermission(context: Context, permission:String): Boolean {
+@Suppress("UNCHECKED_CAST")
+fun <T : Fragment> FragmentActivity.addFragment(@IdRes frameId: Int, creator: () -> T): T {
+    var fragment: T? = supportFragmentManager.findFragmentById(R
+            .id.content) as T?
+    if (fragment == null) {
+        fragment = creator()
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.add(frameId, fragment)
+        transaction.commit()
+    }
+    return fragment
+}
+
+fun ContextCompat.checkSelfPermission(context: Context, permission: String): Boolean {
     return ContextCompat.checkSelfPermission(context,
-            permission)== PackageManager.PERMISSION_GRANTED
+            permission) == PackageManager.PERMISSION_GRANTED
 }
 
 fun Context.getAppComponent(): AppComponent {

@@ -5,13 +5,11 @@
 package com.starrepublic.meetrix.injections;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import com.starrepublic.meetrix.utils.NetworkUtils
 import com.starrepublic.meetrix.utils.Settings
 
-import javax.inject.Named;
 import javax.inject.Singleton;
 
 import dagger.Module;
@@ -32,6 +30,10 @@ class AppModule(@NonNull val context: Context, @NonNull val handler: Handler) {
     @Singleton
     @Provides
     fun provideResources(context: Context) = context.resources
+
+    @Singleton
+    @Provides
+    fun provideNetworkUtils(context: Context) = NetworkUtils(context)
 
     @Provides
     @Singleton

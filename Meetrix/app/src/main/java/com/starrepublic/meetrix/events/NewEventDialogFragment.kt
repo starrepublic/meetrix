@@ -1,12 +1,10 @@
 package com.starrepublic.meetrix.events
 
 import android.app.Dialog
+import android.content.Context
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v4.app.DialogFragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import com.starrepublic.meetrix.BR
 import com.starrepublic.meetrix.R
@@ -17,14 +15,19 @@ import java.text.SimpleDateFormat
 import java.util.*
 import android.content.DialogInterface
 import android.content.Intent
+import android.graphics.Rect
+import android.os.Build
 import android.support.v7.app.AlertDialog
 import android.text.InputType
+import android.view.*
 import android.widget.TextView
 import com.starrepublic.meetrix.utils.BroadcastEvents
 import android.view.inputmethod.EditorInfo.IME_ACTION_DONE
 import android.view.inputmethod.EditorInfo
-
-
+import android.view.inputmethod.InputMethodManager
+import com.starrepublic.meetrix.utils.getStatusBarHeight
+import com.starrepublic.meetrix.utils.setImmersiveMode
+import timber.log.Timber
 
 
 /**
@@ -59,11 +62,52 @@ class NewEventDialogFragment : BaseDialogFragment() {
     private lateinit var from: Date
     private lateinit var to: Date
 
+    private lateinit var inputMethodManager: InputMethodManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         from = Date(arguments.getLong(EXTRA_FROM))
         to = Date(arguments.getLong(EXTRA_TO))
+
+        inputMethodManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+
+        setImmersiveMode(true)
+
+    }
+
+    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        //inputMethodManager.showSoftInput(binding.txtEventName, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+
+
+//        val rootView = dialog.window.decorView.findViewById(android.R.id.content)
+//        rootView.viewTreeObserver.addOnGlobalLayoutListener {
+//            val window = dialog.window
+//            val r = Rect()
+//            val view = window.decorView
+//            view.getWindowVisibleDisplayFrame(r)
+//
+//            val keyboardHeight = (r.bottom - r.top) - dialog.window.decorView.rootView.height
+//
+//            if(r.bottom < context.resources.displayMetrics.heightPixels){
+//                window.setGravity(Gravity.CENTER_HORIZONTAL or Gravity.TOP)
+//                val p = window.attributes
+//                p.width = ViewGroup.LayoutParams.WRAP_CONTENT
+//                p.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
+//                p.x = 200 //dialog.window.decorView.rootView.height/2-dialog.window.decorView.height/2
+//                window.attributes = p
+//            }
+//
+//            Timber.i("HEIGHT", keyboardHeight)
+//            Timber.i("HEIGHT", r)
+//        }
+
+        return super.onCreateView(inflater, container, savedInstanceState)
     }
 
     private lateinit var binding: DialogNewEventBinding
@@ -76,7 +120,7 @@ class NewEventDialogFragment : BaseDialogFragment() {
         binding.txtEventName.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES;
         binding.txtEventName.setOnEditorActionListener({ v, actionId, event ->
             var handled = false
-            if (actionId === EditorInfo.IME_ACTION_DONE) {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
                 createEvent()
                 dismiss()
                 handled = true
@@ -89,7 +133,7 @@ class NewEventDialogFragment : BaseDialogFragment() {
         binding.setVariable(BR.viewModel, vm)
 
 
-        return AlertDialog.Builder(context)
+        val dialog =  AlertDialog.Builder(context)
                 .setTitle(R.string.new_event)
                 .setPositiveButton(R.string.create,
                         { dialog, whichButton ->
@@ -100,6 +144,8 @@ class NewEventDialogFragment : BaseDialogFragment() {
                 .setNegativeButton(R.string.cancel
                 ) { dialog, whichButton -> dialog.dismiss() }
                 .create()
+        dialog.window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        return dialog
     }
 
     private fun createEvent() {

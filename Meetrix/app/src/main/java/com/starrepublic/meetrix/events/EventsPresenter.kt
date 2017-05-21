@@ -1,34 +1,25 @@
 package com.starrepublic.meetrix.events
 
 import android.Manifest
-import android.accounts.AccountManager
-import android.app.Activity
-import android.content.Intent
-import android.util.Log
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.util.DateTime
 import com.google.api.services.admin.directory.model.CalendarResource
 import com.google.api.services.admin.directory.model.User
 import com.google.api.services.calendar.model.Event
-import com.google.api.services.calendar.model.EventAttachment
 import com.google.api.services.calendar.model.EventAttendee
 import com.google.api.services.calendar.model.EventDateTime
+import com.starrepublic.meetrix.R
 import com.starrepublic.meetrix.data.GoogleApiRepository
-import com.starrepublic.meetrix.mvp.BaseFragment
 import com.starrepublic.meetrix.mvp.BasePresenter
-import com.starrepublic.meetrix.mvp.BaseViewModel
-import com.starrepublic.meetrix.utils.*
+import com.starrepublic.meetrix.utils.NetworkUtils
+import com.starrepublic.meetrix.utils.Settings
+import com.starrepublic.meetrix.utils.androidAsync
+import com.starrepublic.meetrix.utils.retryWithDelay
 import rx.Observable
-import rx.Single
 import rx.Subscription
-import rx.functions.Action1
 import rx.internal.util.SubscriptionList
-import rx.lang.kotlin.BehaviorSubject
 import rx.lang.kotlin.PublishSubject
-import rx.lang.kotlin.onErrorReturnNull
-import rx.lang.kotlin.switchOnNext
-import rx.subjects.PublishSubject
-import rx.subjects.Subject
+import java.io.IOException
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -40,13 +31,8 @@ import javax.inject.Inject
 
 class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredential,
                                           val settings: Settings,
-                                          val googleApiRepository: GoogleApiRepository) : BasePresenter<EventsView>() {
-
-
-    //messages
-    val MESSAGE_USERS: Int = 1
-    val MESSAGE_EVENTS: Int = 2
-    val MESSAGE_CREATE: Int = 3
+                                          val googleApiRepository: GoogleApiRepository,
+                                          val networkUtils: NetworkUtils) : BasePresenter<EventsView>() {
 
     //errors
     val ERROR_CREATE_EVENT: Int = 960
@@ -81,16 +67,16 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     private var subscriptions: SubscriptionList = SubscriptionList()
     private var eventsSubscription: Subscription? = null
     private var loadingEvents: Boolean = false
-    private var eventObservable = Observable.merge(Observable.interval(0,15,TimeUnit.SECONDS).filter {
-                !loadingEvents
-            }, refreshEventsSubject)
+    private var eventObservable = Observable.merge(Observable.interval(0, 15, TimeUnit.SECONDS).filter {
+        !loadingEvents
+    }, refreshEventsSubject)
             .filter { !adding }
             .doOnNext {
-                view?.showLoading(view?.string(MESSAGE_EVENTS))
+                view?.showLoading(view?.getString(R.string.loading_events))
             }
             .flatMap {
                 loadingEvents = true
-                googleApiRepository.getEvents(room!!.resourceEmail).retryWithDelay(3,3)
+                googleApiRepository.getEvents(room!!.resourceEmail).retryWithDelay(3, 3)
             }
             .flatMap {
                 loadingEvents = false
@@ -116,6 +102,25 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                 Observable.just(it)
             }
             .filter { !adding }
+            .onErrorResumeNext {
+                val errorObservable = Observable.error<List<Event>>(it)
+
+                if(it is IOException && networkUtils.isWifiEnabled){
+                    networkUtils.isWifiEnabled = false
+                    return@onErrorResumeNext Observable.just(emptyList<Event>())
+                            .delay(5, TimeUnit.SECONDS)
+                            .flatMap {
+                                networkUtils.isWifiEnabled = true
+                                Observable.just(it)
+                            }
+                            .delay(10, TimeUnit.SECONDS)
+                            .flatMap {
+                                errorObservable
+                            }
+
+                }
+                errorObservable
+            }
             .androidAsync()
             .doOnUnsubscribe {
                 view?.hideLoading()
@@ -140,7 +145,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     }
 
     private fun loadUsers() {
-        view?.showLoading(view?.string(MESSAGE_USERS))
+        view?.showLoading(view?.getString(R.string.loading_users))
         subscriptions.add(getUsersSingle.subscribe({
             view?.hideLoading()
             users = it
@@ -173,13 +178,13 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     fun loadEvents() {
 
         eventsSubscription?.unsubscribe()
-        if(eventsSubscription != null && eventsSubscription!!.isUnsubscribed){
+        if (eventsSubscription != null && eventsSubscription!!.isUnsubscribed) {
             eventsSubscription = null
             subscriptions.remove(eventsSubscription)
         }
 
 
-        if(subscriptions.isUnsubscribed){
+        if (subscriptions.isUnsubscribed) {
             subscriptions = SubscriptionList()
         }
 
@@ -196,6 +201,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
         }, {
             view?.showError(it, ERROR_EVENTS)
             view?.hideLoading()
+
             loadEvents()
 
         }, {
@@ -227,7 +233,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
 
         adding = true
 
-        view?.showLoading(view?.string(MESSAGE_CREATE))
+        view?.showLoading(view?.getString(R.string.new_event))
         subscriptions.add(googleApiRepository.saveEvent(accountName, event).doOnSuccess {
             //refreshEventsSubject.onNext(0L)
         }.androidAsync().subscribe({
@@ -244,3 +250,4 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
 
     }
 }
+

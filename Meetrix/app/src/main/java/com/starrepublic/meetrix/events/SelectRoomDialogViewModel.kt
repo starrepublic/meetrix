@@ -8,7 +8,7 @@ import android.widget.ListView
 import com.starrepublic.meetrix.BR
 import com.starrepublic.meetrix.R
 
-class SelectRoomDialogViewModel() : BaseObservable() {
+class SelectRoomDialogViewModel : BaseObservable() {
 
 
     @get:Bindable

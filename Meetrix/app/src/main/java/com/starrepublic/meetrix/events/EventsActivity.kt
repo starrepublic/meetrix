@@ -2,32 +2,29 @@ package com.starrepublic.meetrix.events
 
 import android.R
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentActivity
-import android.support.v4.content.LocalBroadcastManager
 import android.support.v7.app.AppCompatActivity
 import android.view.View
-import com.starrepublic.meetrix.App
-import com.starrepublic.meetrix.utils.addFragmentToActivity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
+import android.os.Handler
+import android.os.Message
+import android.support.v4.app.Fragment
 import android.view.KeyEvent
 import android.view.WindowManager
 import com.starrepublic.meetrix.utils.BroadcastEvents
-import android.view.KeyEvent.KEYCODE_POWER
-
-
-
-
+import com.starrepublic.meetrix.utils.addFragment
+import com.starrepublic.meetrix.widget.InsetsRelativeLayout
+import android.support.v4.view.ViewCompat.onApplyWindowInsets
+import android.os.Build
+import android.view.WindowInsets
+import com.starrepublic.meetrix.utils.ImmersiveActivity
 
 
 /**
  * Created by richard on 2016-11-02.
  */
-class EventsActivity : AppCompatActivity() {
-
+class EventsActivity : ImmersiveActivity() {
 
 
     override fun onResume() {
@@ -46,8 +43,7 @@ class EventsActivity : AppCompatActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.getKeyCode() === KeyEvent.KEYCODE_POWER) {
-
+        if (event.keyCode == KeyEvent.KEYCODE_POWER) {
             return true
         }
 
@@ -57,17 +53,12 @@ class EventsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+
         BroadcastEvents.register(this, messageReceiver, BroadcastEvents.dialogClosedEvent)
 
-        var eventsFragment: EventsFragment? = supportFragmentManager.findFragmentById(R
-                .id.content) as EventsFragment?
-        if (eventsFragment == null) {
-            // Create the fragment
-            eventsFragment = EventsFragment.newInstance()
-
-            addFragmentToActivity(eventsFragment, android.R.id.content);
-        }
-
+        addFragment(R.id.content, {
+            EventsFragment.newInstance()
+        })
     }
 
     override fun onDestroy() {

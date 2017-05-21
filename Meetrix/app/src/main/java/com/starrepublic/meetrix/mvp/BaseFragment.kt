@@ -3,7 +3,9 @@ package com.starrepublic.meetrix.mvp
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.PermissionInfo
 import android.os.Bundle
+import android.support.v13.app.FragmentCompat
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
@@ -107,18 +109,21 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
         return arrayOf()
     }
 
-    override fun string(messageId: Int): String? {
-        throw IllegalAccessError("string() is called from presenter '${presenter?.javaClass?.simpleName}' but not implemented in view")
-    }
-
-
     abstract fun getViewModel(): V
 
     abstract fun createPresenter(appComponent: AppComponent): P?
 
     override fun hasPermission(permission: String): Boolean {
-        return ContextCompat.checkSelfPermission(context,
-                permission) == PackageManager.PERMISSION_GRANTED
+
+        val info = context.packageManager.getPermissionInfo(permission, 0)
+
+        //workaround for checkSelfPermission returns false for "normal permissions" not needing to be requested
+        if(info.protectionLevel == PermissionInfo.PROTECTION_DANGEROUS){
+            return ContextCompat.checkSelfPermission(context,
+                    permission) == PackageManager.PERMISSION_GRANTED
+        }
+
+        return true
     }
 
     fun requestPermissions(vararg permissions: String) {
@@ -129,6 +134,7 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
         }
         else{
             requestPermissions(permissions, REQUEST_PERMISSIONS)
+            //FragmentCompat.requestPermissions((this as Fragment,permissions, REQUEST_PERMISSIONS);
         }
 
     }
@@ -137,22 +143,26 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
         when (requestCode) {
             REQUEST_PERMISSIONS -> {
 
-                val allOk:Boolean = !grantResults.any { it === PackageManager.PERMISSION_DENIED }
-                val denied:ArrayList<String> = ArrayList<String>(grantResults.size)
+                if(grantResults.isNotEmpty()) {
 
-                if(allOk){
-                    onPermissionsGranted()
-                    presenter?.start(getViewModel())
-                    return
-                }
+                    val allOk: Boolean = !grantResults.any { it == PackageManager.PERMISSION_DENIED }
+                    val denied: ArrayList<String> = ArrayList<String>(grantResults.size)
 
-                grantResults.forEachIndexed { index,result ->
-                    if(result === PackageManager.PERMISSION_DENIED){
-                        denied.add(permissions[index])
+                    if (allOk) {
+                        onPermissionsGranted()
+                        presenter?.start(getViewModel())
+                        return
                     }
-                }
 
-                onPermissionsDenied(denied)
+                    grantResults.forEachIndexed { index, result ->
+                        if (result == PackageManager.PERMISSION_DENIED) {
+                            denied.add(permissions[index])
+                        }
+                    }
+
+
+                    onPermissionsDenied(denied)
+                }
             }
         }
     }
