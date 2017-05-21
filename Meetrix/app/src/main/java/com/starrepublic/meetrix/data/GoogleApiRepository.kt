@@ -40,7 +40,6 @@ class GoogleApiRepository @Inject constructor(val calendar:com.google.api.servic
 
                 val events = calendar.events().list(calendarId).setMaxResults(2500).setTimeMin(minTime).setTimeMax(maxTime).setOrderBy("startTime").setSingleEvents(true).execute()
                 val items = events.items
-                throw IOException("test")
                 if(!it.isUnsubscribed) {
                     it.onNext(items)
                 }
