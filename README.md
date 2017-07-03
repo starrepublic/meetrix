@@ -7,6 +7,8 @@ Meetrix is an Android application which displays ongoing meeting information bas
 * View a timeline of bookings
 * Quickly see if the room is free or occupied
 
+![Screenshot](screenshot.png)
+
 ## Installation
 This section guides you through the installation process
 
