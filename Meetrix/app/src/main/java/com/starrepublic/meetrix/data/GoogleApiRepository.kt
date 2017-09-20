@@ -6,6 +6,7 @@ import com.google.api.services.admin.directory.model.CalendarResource
 import com.google.api.services.admin.directory.model.CalendarResources
 import com.google.api.services.admin.directory.model.User
 import com.google.api.services.calendar.model.Event
+import com.starrepublic.meetrix.utils.removeTime
 import rx.Observable
 import rx.Single
 import rx.SingleSubscriber
@@ -20,6 +21,10 @@ import javax.inject.Inject
 class GoogleApiRepository @Inject constructor(val calendar:com.google.api.services.calendar.Calendar, val directory: Directory): DataSource {
 
 
+     companion object {
+         const val DAY_IN_MILLIS = 1000*60*60*24
+     }
+
 
     override fun getEvents(calendarId:String): Observable<List<Event>> {
 
@@ -32,20 +37,28 @@ class GoogleApiRepository @Inject constructor(val calendar:com.google.api.servic
             cal.set(Calendar.MILLISECOND, 0)
 
             val minTime = DateTime(cal.time)
-            val maxTime = DateTime(cal.time.time + 86400000-1)
+            val maxTime = DateTime(cal.time.time + DAY_IN_MILLIS-1)
 
 
 
             try {
-
                 val events = calendar.events().list(calendarId).setMaxResults(2500).setTimeMin(minTime).setTimeMax(maxTime).setOrderBy("startTime").setSingleEvents(true).execute()
-                val items = events.items
+                var items = events.items
+                items = items.filter {
+                    if(it.start?.dateTime == null){
+                        it.start.dateTime = DateTime(Date().removeTime())
+                    }
+                    if(it.end?.dateTime == null){
+                        it.end.dateTime = DateTime(Date().removeTime().time+DAY_IN_MILLIS-1)
+                    }
+                    it.creator != null && it.creator.email != null
+                }
                 if(!it.isUnsubscribed) {
                     it.onNext(items)
                 }
             }catch (e:Exception){
                 if(!it.isUnsubscribed) {
-                    it.onError(e);
+                    it.onError(e)
                 }
 
             }

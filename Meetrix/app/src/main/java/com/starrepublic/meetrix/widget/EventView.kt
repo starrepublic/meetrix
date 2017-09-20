@@ -35,9 +35,10 @@ class EventView : LinearLayout {
 
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes)
 
-    private var  txtTitle: TextView
-    private var  txtEventCreator: TextView
-    private var  txtTimeSpan: TextView
+    private var txtTitle: TextView
+    private var txtEventCreator: TextView
+    private var txtTimeSpan: TextView
+    private var privateMeetingName: String
 
     var startMinutes: Float = 0F
     var endMinutes: Float = 0F
@@ -49,7 +50,8 @@ class EventView : LinearLayout {
             field = value
             startMinutes = toMinutes(value?.start?.dateTime)
             endMinutes = toMinutes(value?.end?.dateTime)
-            txtTitle.text = event?.summary
+            txtTitle.text = if (value?.visibility == "private") privateMeetingName else event?.summary
+
             txtTimeSpan.text = DATE_FORMAT.format(Date(value?.start?.dateTime?.value ?: 0)) + " - "+ DATE_FORMAT.format(Date(value?.end?.dateTime?.value ?: 0))
             txtEventCreator.text = event?.creator?.displayName
             refresh()
@@ -83,21 +85,28 @@ class EventView : LinearLayout {
             txtTimeSpan.setTextColor(color)
         }
 
+
+
     init {
-        orientation = VERTICAL;
+        orientation = VERTICAL
         inflate(context, R.layout.view_event, this);
 
         txtTitle = findViewByIdTyped<TextView>(R.id.txt_title)
         txtEventCreator = findViewByIdTyped<TextView>(R.id.txt_event_creator)
         txtTimeSpan = findViewByIdTyped<TextView>(R.id.txt_time_span)
 
-        val padding: Int = (resources.displayMetrics.density * 8).toInt();
+        privateMeetingName = context.getString(R.string.event_name_default_value)
+
+        val padding: Int = (resources.displayMetrics.density * 8).toInt()
         setPadding(padding, padding, padding, padding);
 
         this.setBackgroundColor(BACKGROUND_COLOR_ENABLED.toInt())
     }
 
     private fun toMinutes(datetime: DateTime?): Float {
+        if(datetime==null){
+            return 0f
+        }
         CALENDAR.time = Date(datetime?.value ?: 0)
         return CALENDAR.get(Calendar.MINUTE) + (CALENDAR.get(Calendar.HOUR_OF_DAY) * 60f)
     }

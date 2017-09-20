@@ -79,7 +79,6 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                 googleApiRepository.getEvents(room!!.resourceEmail).retryWithDelay(3, 3)
             }
             .flatMap {
-                loadingEvents = false
                 val events = it
                 it.forEach {
                     if (users.contains(it.creator.email)) {
@@ -92,7 +91,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                         }
                     }
                 }
-                Observable.just(it)
+                Observable.just(events)
             }
             .flatMap {
                 it.forEach {
@@ -199,6 +198,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
             }
             view?.hideLoading()
         }, {
+            it.printStackTrace();
             view?.showError(it, ERROR_EVENTS)
             view?.hideLoading()
 
