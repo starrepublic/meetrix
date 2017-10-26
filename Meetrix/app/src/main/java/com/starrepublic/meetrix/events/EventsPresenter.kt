@@ -27,41 +27,30 @@ import javax.inject.Inject
 /**
  * Created by richard on 2016-11-08.
  */
-
-
 class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredential,
                                           val settings: Settings,
                                           val googleApiRepository: GoogleApiRepository,
                                           val networkUtils: NetworkUtils) : BasePresenter<EventsView>() {
-
     //errors
     val ERROR_CREATE_EVENT: Int = 960
     val ERROR_USERS: Int = 970
     val ERROR_ROOMS: Int = 980
     val ERROR_EVENTS: Int = 990
-
-
     var room: CalendarResource?
         set(value) {
             settings.roomResourceId = value
             view?.setRoom(value!!)
         }
         get() = settings.roomResourceId
-
     var accountName: String?
         set(value) {
             settings.accountName = value
             cedentials.selectedAccountName = value
         }
         get() = settings.accountName
-
     var users: Map<String, User> = emptyMap()
-
     var adding: Boolean = false
-
     private val refreshEventsSubject = PublishSubject<Long>()
-
-
     private val getRoomsSingle = googleApiRepository.getRooms().androidAsync()
     private val getUsersSingle = googleApiRepository.getUsers().androidAsync()
     private var subscriptions: SubscriptionList = SubscriptionList()
@@ -79,6 +68,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                 googleApiRepository.getEvents(room!!.resourceEmail).retryWithDelay(3, 3)
             }
             .flatMap {
+                loadingEvents = false
                 val events = it
                 it.forEach {
                     if (users.contains(it.creator.email)) {
@@ -104,7 +94,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
             .onErrorResumeNext {
                 val errorObservable = Observable.error<List<Event>>(it)
 
-                if(it is IOException && networkUtils.isWifiEnabled){
+                if (it is IOException && networkUtils.isWifiEnabled) {
                     networkUtils.isWifiEnabled = false
                     return@onErrorResumeNext Observable.just(emptyList<Event>())
                             .delay(5, TimeUnit.SECONDS)
@@ -116,7 +106,6 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                             .flatMap {
                                 errorObservable
                             }
-
                 }
                 errorObservable
             }
@@ -175,22 +164,17 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     }
 
     fun loadEvents() {
-
         eventsSubscription?.unsubscribe()
         if (eventsSubscription != null && eventsSubscription!!.isUnsubscribed) {
             eventsSubscription = null
             subscriptions.remove(eventsSubscription)
         }
 
-
         if (subscriptions.isUnsubscribed) {
             subscriptions = SubscriptionList()
         }
 
         loadingEvents = false
-
-
-
 
         eventsSubscription = eventObservable.subscribe({
             if (it != null) {
@@ -203,13 +187,10 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
             view?.hideLoading()
 
             loadEvents()
-
         }, {
-
         })
         subscriptions.add(eventsSubscription)
     }
-
 
     fun loadRooms() {
         subscriptions.add(getRoomsSingle.subscribe({
@@ -220,7 +201,6 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     }
 
     fun createEvent(eventName: String?, from: Date?, to: Date?, accountName: String) {
-
         val event: Event = Event()
         event.start = EventDateTime().setDateTime(DateTime(from))
         event.end = EventDateTime().setDateTime(DateTime(to))
@@ -235,6 +215,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
 
         view?.showLoading(view?.getString(R.string.new_event))
         subscriptions.add(googleApiRepository.saveEvent(accountName, event).doOnSuccess {
+            view?.hideLoading()
             //refreshEventsSubject.onNext(0L)
         }.androidAsync().subscribe({
             adding = false
@@ -247,7 +228,6 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
     }
 
     init {
-
     }
 }
 

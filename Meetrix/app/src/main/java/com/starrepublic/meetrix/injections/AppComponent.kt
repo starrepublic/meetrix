@@ -5,19 +5,12 @@
 package com.starrepublic.meetrix.injections;
 
 import com.starrepublic.meetrix.GoogleApiModule
-import com.starrepublic.meetrix.data.GoogleApiRepository
-import com.starrepublic.meetrix.data.GoogleApiRepositoryComponent
 import com.starrepublic.meetrix.events.EventsPresenter
-import com.starrepublic.meetrix.mvp.scopes.PerFragment
-import javax.inject.Singleton;
-
-import dagger.Component;
+import dagger.Component
+import javax.inject.Singleton
 
 @Singleton
 @Component(modules = arrayOf(AppModule::class, GoogleApiModule::class))
 interface AppComponent {
-
-
-    fun getEventsPresenter():EventsPresenter
-
+    fun getEventsPresenter(): EventsPresenter
 }

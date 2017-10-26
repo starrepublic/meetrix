@@ -15,10 +15,8 @@ class AlphanumComparator : Comparator<String> {
         while (thisMarker < s1Length && thatMarker < s2Length) {
             val thisChunk = getChunk(s1, s1Length, thisMarker)
             thisMarker += thisChunk.length
-
             val thatChunk = getChunk(s2, s2Length, thatMarker)
             thatMarker += thatChunk.length
-
             // If both chunks contain numeric characters, sort them numerically.
             var result: Int
             if (isDigit(thisChunk[0]) && isDigit(thatChunk[0])) {

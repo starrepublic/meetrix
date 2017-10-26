@@ -1,32 +1,20 @@
 package com.starrepublic.meetrix.events
 
-import android.R
-import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
-import android.view.View
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Handler
-import android.os.Message
-import android.support.v4.app.Fragment
+import android.os.Bundle
 import android.view.KeyEvent
-import android.view.WindowManager
+import android.view.View
+import com.starrepublic.meetrix.R
 import com.starrepublic.meetrix.utils.BroadcastEvents
-import com.starrepublic.meetrix.utils.addFragment
-import com.starrepublic.meetrix.widget.InsetsRelativeLayout
-import android.support.v4.view.ViewCompat.onApplyWindowInsets
-import android.os.Build
-import android.view.WindowInsets
 import com.starrepublic.meetrix.utils.ImmersiveActivity
-
+import com.starrepublic.meetrix.utils.addFragment
 
 /**
  * Created by richard on 2016-11-02.
  */
 class EventsActivity : ImmersiveActivity() {
-
-
     override fun onResume() {
         super.onResume()
         setFlags()
@@ -51,18 +39,18 @@ class EventsActivity : ImmersiveActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)
-
 
         BroadcastEvents.register(this, messageReceiver, BroadcastEvents.dialogClosedEvent)
 
-        addFragment(R.id.content, {
+        addFragment(android.R.id.content, {
             EventsFragment.newInstance()
         })
     }
 
     override fun onDestroy() {
-        BroadcastEvents.unregister(this,messageReceiver)
+        BroadcastEvents.unregister(this, messageReceiver)
         super.onDestroy()
     }
 }

@@ -3,13 +3,9 @@ package com.starrepublic.meetrix.mvp
 /**
  * Created by richard on 2016-11-08.
  */
-abstract class BasePresenter<V:BaseViewModel>(){
-
-
-
+abstract class BasePresenter<V : BaseViewModel>() {
     protected var view: V? = null
-
-    fun start(viewModel:V) {
+    fun start(viewModel: V) {
         this.view = viewModel;
         onStart();
     }
@@ -30,6 +26,4 @@ abstract class BasePresenter<V:BaseViewModel>(){
      * After this method is finished viewModel will be de-referenced.
      */
     protected abstract fun onStop();
-
-
 }

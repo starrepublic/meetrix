@@ -1,49 +1,35 @@
 package com.starrepublic.meetrix.events
 
 import android.app.Dialog
-import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
 import android.databinding.DataBindingUtil
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
-import android.widget.ArrayAdapter
+import android.support.v7.app.AlertDialog
+import android.text.InputType
+import android.view.LayoutInflater
+import android.view.View
+import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
 import com.starrepublic.meetrix.BR
 import com.starrepublic.meetrix.R
 import com.starrepublic.meetrix.databinding.DialogNewEventBinding
-import com.starrepublic.meetrix.databinding.DialogSelectRoomBinding
 import com.starrepublic.meetrix.mvp.BaseDialogFragment
+import com.starrepublic.meetrix.utils.BroadcastEvents
+import com.starrepublic.meetrix.utils.setImmersiveMode
 import java.text.SimpleDateFormat
 import java.util.*
-import android.content.DialogInterface
-import android.content.Intent
-import android.graphics.Rect
-import android.os.Build
-import android.support.v7.app.AlertDialog
-import android.text.InputType
-import android.view.*
-import android.widget.TextView
-import com.starrepublic.meetrix.utils.BroadcastEvents
-import android.view.inputmethod.EditorInfo.IME_ACTION_DONE
-import android.view.inputmethod.EditorInfo
-
-import android.view.inputmethod.InputMethodManager
-import com.starrepublic.meetrix.utils.getStatusBarHeight
-import com.starrepublic.meetrix.utils.setImmersiveMode
-import timber.log.Timber
-
 
 /**
  * Created by richard on 2016-11-12.
  */
 class NewEventDialogFragment : BaseDialogFragment() {
-
     companion object {
         val DATE_FORMAT: SimpleDateFormat = SimpleDateFormat("HH:mm")
         val EXTRA_FROM: String = "extra_from"
         val EXTRA_TO: String = "extra_to"
-
         fun newInstance(from: Date, to: Date): NewEventDialogFragment {
             val fragment = NewEventDialogFragment()
-
             val args = Bundle()
 
             args.putLong(EXTRA_FROM, from.time)
@@ -58,11 +44,9 @@ class NewEventDialogFragment : BaseDialogFragment() {
     val fragment: EventsFragment by lazy {
         (this.targetFragment as EventsFragment)
     }
-
     private val vm = NewEventDialogViewModel()
     private lateinit var from: Date
     private lateinit var to: Date
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -76,11 +60,8 @@ class NewEventDialogFragment : BaseDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
     }
 
-
     private lateinit var binding: DialogNewEventBinding
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-
         binding = DataBindingUtil.inflate<DialogNewEventBinding>(LayoutInflater.from(context), R.layout.dialog_new_event, null, false);
 
         binding.txtEventName.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES;
@@ -100,13 +81,12 @@ class NewEventDialogFragment : BaseDialogFragment() {
         vm.eventName = getString(R.string.event_name_default_value)
 
         binding.setVariable(BR.viewModel, vm)
-
-        val dialog =  AlertDialog.Builder(context)
+        val dialog = AlertDialog.Builder(context)
                 .setTitle(R.string.new_event)
                 .setPositiveButton(R.string.create,
-                    { dialog, whichButton ->
-                        createEvent()
-                    }
+                        { dialog, whichButton ->
+                            createEvent()
+                        }
                 )
                 .setView(binding.root)
                 .setNegativeButton(R.string.cancel)

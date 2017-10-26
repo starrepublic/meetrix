@@ -3,24 +3,38 @@ package com.starrepublic.meetrix.events
 import android.Manifest
 import android.accounts.AccountManager
 import android.animation.Animator
+import android.animation.ArgbEvaluator
+import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.ACTION_POWER_CONNECTED
+import android.content.Intent.ACTION_POWER_DISCONNECTED
 import android.content.IntentFilter
 import android.databinding.DataBindingUtil
-import android.os.Bundle
-import android.os.Handler
+import android.media.MediaPlayer
+import android.os.*
 import android.support.v4.app.DialogFragment
 import android.support.v4.content.ContextCompat
+import android.support.v4.widget.ViewDragHelper
+import android.util.Log
+import android.view.*
 import android.view.animation.AlphaAnimation
 import android.view.animation.Interpolator
 import android.widget.RelativeLayout
 import com.android.keyguard.widget.GlowPadView
+import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException
+import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
+import com.google.api.client.googleapis.json.GoogleJsonResponseException
+import com.google.api.client.util.DateTime
 import com.google.api.services.admin.directory.model.CalendarResource
 import com.google.api.services.calendar.model.Event
+import com.google.api.services.calendar.model.EventDateTime
 import com.starrepublic.meetrix.BR
 import com.starrepublic.meetrix.R
 import com.starrepublic.meetrix.databinding.FragmentEventsBinding
@@ -29,27 +43,11 @@ import com.starrepublic.meetrix.mvp.BaseFragment
 import com.starrepublic.meetrix.utils.LUtils
 import com.starrepublic.meetrix.utils.ReverseInterpolator
 import com.starrepublic.meetrix.utils.dpToPx
+import com.starrepublic.meetrix.widget.EventView
 import com.starrepublic.meetrix.widget.TimeView
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
-import com.google.android.gms.common.GooglePlayServicesUtil
-import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
-import com.google.api.client.googleapis.json.GoogleJsonResponseException
-import com.google.api.client.util.DateTime
-import com.google.api.services.calendar.model.EventDateTime
-import com.starrepublic.meetrix.widget.EventView
-import android.animation.ObjectAnimator
-import android.animation.ArgbEvaluator
-import android.content.Intent.ACTION_POWER_CONNECTED
-import android.content.Intent.ACTION_POWER_DISCONNECTED
-import android.media.MediaPlayer
-import android.os.BatteryManager
-import android.os.Build
-import android.view.*
-import android.app.KeyguardManager
-import android.os.PowerManager
-
 
 /**
  * Created by richard on 2016-11-08.
@@ -61,11 +59,9 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         val DATE_FORMAT: SimpleDateFormat = SimpleDateFormat("HH:mm")
         val DATE_FORMAT_FULL: SimpleDateFormat = SimpleDateFormat("HH:mm yyyy-MM-dd")
         val RESET_SCROLL_TIME: Int = 15
-
         val REQUEST_ACCOUNT_PICKER = 1000
     }
 
-    private var accountPickerShown: Boolean = false
     private var vm: EventsViewModel = EventsViewModel()
     private val receiverTick: BroadcastReceiver? = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context, intent: Intent) {
@@ -74,32 +70,27 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
                 if (idle) {
                     resetTimeline(true)
                 }
-
             }
         }
     }
     private val receiverPower = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-
-
             val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
             val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
-
             val flagScreenOn = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             if (isCharging) {
                 activity.window.addFlags(flagScreenOn)
                 wakeDevice()
-
             } else {
                 activity.window.clearFlags(flagScreenOn)
             }
-
             val chargePlug = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
             val usbCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_USB
             val acCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_AC
         }
     }
     private val handler = Handler()
+    private var accountPickerShown: Boolean = false
     private var timeWidth: Int = 0
     private var timeHeight: Int = 0
     private var eventHeight: Int = 0
@@ -120,30 +111,26 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     private var lastHour = -1
     private var lastScroll = 0
     private val eventViewList = ArrayList<EventView>(100)
-    private lateinit var binding: FragmentEventsBinding
     private var selectedTimeInHours: Float = 0F
     private var roomEnabled: Boolean = true
     private val glowPadIds = arrayOf(R.drawable.ic_time_15_selector, R.drawable.ic_time_30_selector, R.drawable.ic_time_45_selector, R.drawable.ic_time_60_selector)
+    private var colorAvailable: Int = 0
+    private var colorUnavailable: Int = 0
+    private lateinit var binding: FragmentEventsBinding
+    private lateinit var soundCreate: MediaPlayer
+    private lateinit var soundSnap: MediaPlayer
+    private lateinit var soundRelease: MediaPlayer
+    private lateinit var fullWakeLock: PowerManager.WakeLock
 
     override fun showRooms(rooms: List<CalendarResource>) {
         val dialog: SelectRoomDialogFragment? = (fragmentManager.findFragmentByTag("select_room_dialog") as SelectRoomDialogFragment?)
         dialog?.showRooms(rooms)
     }
 
-
-    private var colorAvailable: Int = 0
-    private var colorUnavailable: Int = 0
-    private lateinit var soundCreate: MediaPlayer
-    private lateinit var soundSnap: MediaPlayer
-    private lateinit var soundRelease: MediaPlayer
-    private lateinit var fullWakeLock: PowerManager.WakeLock
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         retainInstance = true
-
-
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         fullWakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "MEETRIX - FULL WAKE LOCK")
 
@@ -160,8 +147,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         fadeInAnimation.duration = 400
         fadeInAnimation.isFillEnabled = true
         fadeInAnimation.fillAfter = true
-
-
         val resources = context.resources
 
         colorAvailable = ContextCompat.getColor(context, R.color.available)
@@ -204,7 +189,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         }
     }
 
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -218,27 +202,26 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
                     presenter?.init()
                 }
             }
+
             presenter?.ERROR_ROOMS -> {
                 showSelectRoomDialog()
             }
+
             presenter?.ERROR_EVENTS -> {
                 presenter?.loadEvents()
             }
         }
     }
 
-
     fun wakeDevice() {
         fullWakeLock.acquire()
-
         val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         val keyguardLock = keyguardManager.newKeyguardLock("TAG")
         keyguardLock.disableKeyguard()
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun createView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-
-
         timeViews.clear()
         eventViewList.clear()
         roomEnabled = true
@@ -251,7 +234,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
         binding.txtTime.setOnClickListener { resetTimeline(true) }
         updateTime()
-
         val dummyEvent = Event()
         dummyEvent.summary = getString(R.string.new_event)
         binding.viewNewEvent.event = dummyEvent
@@ -259,14 +241,9 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         binding.btnSettings.setOnClickListener {
             showSelectRoomDialog()
         }
-
         val resources = context.resources;
-
         val glowPadDiameter = resources.getDimensionPixelSize(R.dimen.glowpad_outerring_diameter)
-
         val metrics = resources.getDisplayMetrics()
-
-
         val timeLineParams = binding.viewCurrentTimeline.layoutParams as ViewGroup.MarginLayoutParams
         timeLineParams.topMargin = -glowPadDiameter / 2 - context.dpToPx(108 / 2f - 32)
 
@@ -274,10 +251,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         binding.layoutEvents.setPadding((metrics.widthPixels / 2f).toInt(), 0, (metrics.widthPixels / 2f).toInt(), 0)
 
         binding.glowPad?.setOnTriggerListener(object : GlowPadView.OnTriggerListener {
-
-
             fun enableViews(glowPad: GlowPadView, index: Int) {
-
                 for (id in glowPad.getTargetIds()) {
                     glowPad.setEnableTarget(id, false)
                 }
@@ -288,10 +262,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             }
 
             override fun onGrabbed(v: View, handle: Int) {
-
                 binding.scrollview.smoothScrollBy(0, 0)
-
-
                 /*
                  binding.scrollview.scrollStopped()
                 val snapTo = (timeWidth / 4f)
@@ -301,8 +272,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
                 handler.removeCallbacks(resetTimeRunnable)
 
                 v.playSoundEffect(SoundEffectConstants.CLICK)
-
-
                 val glowPad = v as GlowPadView
                 binding.layNewEvent.visibility = View.VISIBLE
 
@@ -315,10 +284,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
                     val minutes = Math.round(selectedTimeInHours * 60f)
                     val firstEventMinutes = Math.min(eventViewList.find { it.startMinutes >= minutes }?.startMinutes ?: minutes + 60f, minutes + 60f)
                     val diff = firstEventMinutes - minutes;
-
                     val index = Math.floor(diff / 15f.toDouble()).toInt()
                     enableViews(glowPad, index - 1)
-
                 }
             }
 
@@ -345,7 +312,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             }
 
             override fun onFinishFinalAnimation() {
-
             }
 
             override fun onTracking(v: View, handle: Int) {
@@ -353,12 +319,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             }
 
             override fun onSnapped(v: View, target: Int) {
-
-
                 soundSnap.start()
-
                 val time = targetToTime(target)
-
                 val event = binding.viewNewEvent.event
                 event?.start = EventDateTime().setDateTime(DateTime(selectedTimeToDate()))
                 event?.end = EventDateTime().setDateTime(DateTime(selectedTimeToDate().time + time.toLong() * 60L * 1000L))
@@ -386,19 +348,15 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
 
         for (i in 0..23) {
-
-
             val timeView = TimeView(context)
 
             calendar.set(Calendar.HOUR_OF_DAY, i)
             timeView.time = calendar.time
-
             val params = RelativeLayout.LayoutParams(timeWidth, timeHeight)
             params.leftMargin = i * timeWidth
             params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 1)
             binding.layoutEvents.addView(timeView, params)
             timeViews.add(timeView)
-
         }
 
         binding.layoutEvents.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
@@ -414,44 +372,29 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             }
         })
 
-
         binding.scrollview.viewTreeObserver.addOnScrollChangedListener(this)
         binding.scrollview.setOnTouchListener { view, motionEvent ->
-
-
             if (motionEvent.action == MotionEvent.ACTION_DOWN) {
                 binding.scrollview.snappingEnabled = true
             }
             false
         }
         binding.scrollview.snapTo = (timeWidth / 4)
-
-
         val newEventParams = binding.layNewEvent.layoutParams as ViewGroup.MarginLayoutParams
         newEventParams.leftMargin = (metrics.widthPixels / 2f).toInt()
-
-
         val root = binding.root
 
         return root
     }
 
     private fun showNewEventDialog(minutes: Int) {
-
-
         handler.removeCallbacks(resetTimeRunnable)
-
-
         val from = selectedTimeToDate()
         val to = Date(from.time + minutes.toLong() * 60L * 1000L)
-
         val newEventDialogFragent = NewEventDialogFragment.newInstance(from, to)
         newEventDialogFragent.setTargetFragment(this, 0)
         newEventDialogFragent.show(fragmentManager, "new_event_dialog_fragment")
-
         //(activity as? EventsActivity)?.toggleImersiveMode(true)
-
-
     }
 
     private fun animateNewEvent(from: Int, to: Int) {
@@ -460,7 +403,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     override fun onResume() {
-
         updateTime()
 
         soundCreate = MediaPlayer.create(context, R.raw.chime_dim2)
@@ -480,13 +422,11 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         resetTimeout()
     }
 
-
     fun isCharging(): Boolean {
         val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
         return plugged == BatteryManager.BATTERY_PLUGGED_AC || plugged == BatteryManager.BATTERY_PLUGGED_USB
     }
-
 
     override fun showError(error: Throwable?, code: Int) {
         error?.printStackTrace()
@@ -501,13 +441,14 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
                     activity.finish()
                 })
             }
-            is UserRecoverableAuthIOException -> {
 
+            is UserRecoverableAuthIOException -> {
                 startActivityForResult(error.intent, code)
             }
-            is GoogleJsonResponseException -> {
 
+            is GoogleJsonResponseException -> {
             }
+
             else -> {
                 showToast(getString(R.string.error))
             }
@@ -528,7 +469,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     override fun showEvents(events: List<Event>) {
-
         eventViewList.forEach {
             binding.layoutEvents.removeView(it)
         }
@@ -541,7 +481,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         }
 
         onScrollChanged()
-
     }
 
     private fun renderEvent(event: Event): EventView {
@@ -557,21 +496,15 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         eventViewParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 1)
         binding.layoutEvents.addView(eventView, eventViewParams)
         return eventView
-
     }
-
 
     override fun createPresenter(appComponent: AppComponent): EventsPresenter? {
         return appComponent.getEventsPresenter()
     }
 
     override fun getViewId(): Int = R.layout.fragment_events
-
-
     override fun onStart() {
         super.onStart()
-
-
         val intentFilterPower = IntentFilter()
         intentFilterPower.addAction(ACTION_POWER_CONNECTED)
         intentFilterPower.addAction(ACTION_POWER_DISCONNECTED)
@@ -585,14 +518,11 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     private fun resetTimeline(animate: Boolean) {
-
         binding.scrollview.snappingEnabled = false
         val cal = Calendar.getInstance()
         val hour = cal.get(Calendar.HOUR_OF_DAY)
         val minute = cal.get(Calendar.MINUTE)
         val totalHours = hour + minute / 60f
-
-
         val targetX = Math.ceil((totalHours * timeWidth).toDouble()).toInt()
         if (animate) {
             binding.scrollview.smoothScrollTo(targetX, 0)
@@ -601,7 +531,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         }
 
         eventViewList.forEach(EventView::refresh)
-
     }
 
     override fun onPause() {
@@ -626,11 +555,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         vm.room = room.resourceName
     }
 
-
-    private fun selectedTimeToHourMinute(): Array<Int> {
-        return arrayOf(selectedTimeInHours.toInt(), Math.floor((selectedTimeInHours % 1 * 60).toDouble()).toInt())
-    }
-
+    private fun selectedTimeToHourMinute(): Array<Int> =
+            arrayOf(selectedTimeInHours.toInt(), Math.floor((selectedTimeInHours % 1 * 60).toDouble()).toInt())
 
     private fun selectedTimeToDate(calendar: Calendar? = null): Date {
         val cal = calendar ?: Calendar.getInstance()
@@ -645,7 +571,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     override fun onScrollChanged() {
-
         idle = false
         val scrollSpeed = Math.abs(binding.scrollview.getScrollX() - lastScroll)
 
@@ -653,13 +578,9 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         lastScroll = binding.scrollview.getScrollX()
 
         selectedTimeInHours = binding.scrollview.getScrollX() / timeWidth.toFloat()
-
         val hourMinute = selectedTimeToHourMinute()
-
         val hour = hourMinute[0]
         val minute = hourMinute[1]
-
-
         val hourChanged = hour != lastHour
         val hourDiff = Math.signum((hour - lastHour).toFloat()).toInt()
         if (hourChanged) {
@@ -669,8 +590,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         if (hour == 24) {
             return
         }
-
-
         val eventBusy = eventViewList.find {
             it.startMinutes / 60f <= selectedTimeInHours && it.endMinutes / 60f > selectedTimeInHours
         }
@@ -690,7 +609,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         calendar.set(Calendar.MILLISECOND, 0)
         calendar.set(Calendar.HOUR_OF_DAY, hour)
         calendar.set(Calendar.MINUTE, minute)
-
         val timeView = timeViews[hour]
         val timeTextView = timeView.textView
         val timeTextViewWidth = timeTextView.getWidth().toFloat()
@@ -701,7 +619,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             val translationX = (if (hourDiff == 1) 0 else (hourDiff * timeWidth)).toFloat()
 
             if (scrollSpeed < 20) {
-
                 binding.txtSelectedTime.setTranslationX(translationX)
 
                 if (hourDiff != 1) {
@@ -710,34 +627,27 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             } else {
                 binding.txtSelectedTime.setTranslationX(0f)
             }
-
         }
 
         if (hourChanged && hour > 0) {
-
             val prevTimeView = timeViews[hour - 1]
             prevTimeView.textView.clearAnimation()
             prevTimeView.textView.setAlpha(1f)
             if (hourDiff == 1) {
                 animateViewTranslationX(prevTimeView.textView, 0f)
             } else {
-                prevTimeView.textView.setTranslationX(0f)
+                prevTimeView.textView.translationX = 0f
             }
-
         }
         if (hourChanged && hour < 23) {
             val nextTimeView = timeViews[hour + 1]
             nextTimeView.textView.clearAnimation()
-            nextTimeView.textView.setAlpha(1f)
+            nextTimeView.textView.alpha = 1f
             nextTimeView.textView.setTranslationX(0f)
         }
-
-
         val offset = timeWidth * (selectedTimeInHours % 1)
-
         val diff = timeWidth - timeTextViewWidth
         val selectedTimeTranslationX = binding.txtSelectedTime.getTranslationX()
-
         var textOffset = offset.toInt()
         var selectedTimeTargetX = 0
         if (offset > diff) {
@@ -750,11 +660,10 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             animateViewTranslationX(binding.txtSelectedTime, selectedTimeTargetX.toFloat())
         }
 
-        binding.txtSelectedTime.setText(TimeView.DATE_FORMAT.format(calendar.time))
+        binding.txtSelectedTime.text = TimeView.DATE_FORMAT.format(calendar.time)
 
 
         resetTimeout()
-
     }
 
     private fun resetTimeout() {
@@ -764,7 +673,6 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
     private fun updateBackgroundColor(color: Int) {
         if (color != lastBgColor) {
-
             eventViewList.forEach {
                 it.textColor = color
             }
@@ -796,34 +704,31 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         eventView.translationY = eventHeight.toFloat()
         eventView.animate().translationY(0f).setInterpolator(fastOutSlowInInterpolator).setStartDelay(200).setDuration(400).withLayer().start()
         onScrollChanged()
-
     }
 
     override fun removeEvent(event: Event) {
         val eventView = eventViewList.find({
             it.event?.id == event.id
         })
-        if (eventView != null) {
-            eventView.animate().translationY(eventHeight.toFloat()).setInterpolator(fastOutSlowInInterpolator).setDuration(400).setListener(object : Animator.AnimatorListener {
-                override fun onAnimationRepeat(p0: Animator?) {
+        eventView?.animate()?.
+                translationY(eventHeight.toFloat())?.
+                setInterpolator(fastOutSlowInInterpolator)?.
+                setDuration(400)?.
+                setListener(object : Animator.AnimatorListener {
+                    override fun onAnimationRepeat(p0: Animator?) {
+                    }
 
-                }
+                    override fun onAnimationEnd(p0: Animator?) {
+                        eventViewList.remove(eventView)
+                        binding.layoutEvents.removeView(eventView)
+                    }
 
-                override fun onAnimationEnd(p0: Animator?) {
-                    eventViewList.remove(eventView)
-                    binding.layoutEvents.removeView(eventView)
-                }
+                    override fun onAnimationCancel(p0: Animator?) {
+                    }
 
-                override fun onAnimationCancel(p0: Animator?) {
-
-                }
-
-                override fun onAnimationStart(p0: Animator?) {
-
-                }
-
-            }).withLayer().start()
-        }
+                    override fun onAnimationStart(p0: Animator?) {
+                    }
+                })?.withLayer()?.start()
     }
 
     fun dismissedDialog(dialog: DialogFragment) {

@@ -5,12 +5,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PermissionInfo
 import android.os.Bundle
-import android.support.v13.app.FragmentCompat
-import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AlertDialog
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,28 +20,19 @@ import com.starrepublic.meetrix.utils.getAppComponent
 import timber.log.Timber
 import java.util.*
 
-
-
-
 /**
  * Created by richard on 2016-11-08.
  */
 abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(), BaseViewModel {
-
     companion object {
-
         val REQUEST_GOOGLE_PLAY_SERVICES = 0xFFF0
         val REQUEST_PERMISSIONS = 0xFFF1
     }
 
     var root: View? = null
     var presenter: P? = null
-
     private var requiredPermissions: Array<String> = arrayOf()
-
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-
-
         root = createView(inflater, container, savedInstanceState);
 
         if (root == null) {
@@ -59,15 +47,12 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
     }
 
     abstract fun createView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View?
-
     abstract fun getViewId(): Int
-
     override fun showToast(message: String) {
-        Toast.makeText(context,message,Toast.LENGTH_LONG).show()
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
 
     override fun showSnackbar(message: String) {
-
     }
 
     override fun onDestroyView() {
@@ -80,23 +65,19 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
         super.onViewCreated(view, savedInstanceState)
 
         presenter = createPresenter(context.getAppComponent())
-
-
     }
 
     override fun onResume() {
-
         requiredPermissions = requirePermissions()
 
-        if(requiredPermissions.isEmpty()){
+        if (requiredPermissions.isEmpty()) {
             presenter?.start(getViewModel())
-        }else{
+        } else {
             requestPermissions(*requiredPermissions)
         }
 
 
         super.onResume()
-
     }
 
     override fun onPause() {
@@ -104,21 +85,16 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
         super.onPause()
     }
 
-
-    open fun requirePermissions():Array<String>{
+    open fun requirePermissions(): Array<String> {
         return arrayOf()
     }
 
     abstract fun getViewModel(): V
-
     abstract fun createPresenter(appComponent: AppComponent): P?
-
     override fun hasPermission(permission: String): Boolean {
-
         val info = context.packageManager.getPermissionInfo(permission, 0)
-
         //workaround for checkSelfPermission returns false for "normal permissions" not needing to be requested
-        if(info.protectionLevel == PermissionInfo.PROTECTION_DANGEROUS){
+        if (info.protectionLevel == PermissionInfo.PROTECTION_DANGEROUS) {
             return ContextCompat.checkSelfPermission(context,
                     permission) == PackageManager.PERMISSION_GRANTED
         }
@@ -127,24 +103,19 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
     }
 
     fun requestPermissions(vararg permissions: String) {
-
-        if(permissions.all { hasPermission(it) }){
+        if (permissions.all { hasPermission(it) }) {
             onPermissionsGranted()
             presenter?.start(getViewModel())
-        }
-        else{
+        } else {
             requestPermissions(permissions, REQUEST_PERMISSIONS)
             //FragmentCompat.requestPermissions((this as Fragment,permissions, REQUEST_PERMISSIONS);
         }
-
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         when (requestCode) {
             REQUEST_PERMISSIONS -> {
-
-                if(grantResults.isNotEmpty()) {
-
+                if (grantResults.isNotEmpty()) {
                     val allOk: Boolean = !grantResults.any { it == PackageManager.PERMISSION_DENIED }
                     val denied: ArrayList<String> = ArrayList<String>(grantResults.size)
 
@@ -171,8 +142,7 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
         requestPermissions(*permissions.toArray(arrayOf("")))
     }
 
-    open fun onPermissionsGranted(){
-
+    open fun onPermissionsGranted() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -184,7 +154,6 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
                 onPlayServicesInstalled()
             }
         }
-
     }
 
     open fun onPlayServicesUnavailable() {
@@ -194,7 +163,6 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
     }
 
     open fun onPlayServicesInstalled() {
-
     }
 
     private fun isGooglePlayServicesAvailable(): Boolean {

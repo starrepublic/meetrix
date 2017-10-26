@@ -7,14 +7,14 @@ import android.view.animation.Interpolator;
  */
 public class ReverseInterpolator implements Interpolator {
 
-    private final Interpolator interpolator;
+	private final Interpolator interpolator;
 
-    public ReverseInterpolator(Interpolator interpolator) {
-        this.interpolator = interpolator;
-    }
+	public ReverseInterpolator(Interpolator interpolator) {
+		this.interpolator = interpolator;
+	}
 
-    @Override
-    public float getInterpolation(float v) {
-        return 1-interpolator.getInterpolation(v);
-    }
+	@Override
+	public float getInterpolation(float v) {
+		return 1 - interpolator.getInterpolation(v);
+	}
 }

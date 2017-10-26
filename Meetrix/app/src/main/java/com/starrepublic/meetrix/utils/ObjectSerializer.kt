@@ -9,14 +9,12 @@ import java.io.ObjectOutputStream
 /**
  * Created by richard on 2016-11-10.
  */
-
 class ObjectSerializer {
     companion object {
-        fun serialize(obj: Any?) : String {
+        fun serialize(obj: Any?): String {
             if (obj == null) {
                 return ""
             }
-
             val baos = ByteArrayOutputStream()
             val oos = ObjectOutputStream(baos)
             oos.writeObject(obj)
@@ -25,12 +23,11 @@ class ObjectSerializer {
             return Base64.encodeToString(baos.toByteArray()!!, Base64.DEFAULT)
         }
 
-        fun <T> deserialize(str: String?) : T? {
+        fun <T> deserialize(str: String?): T? {
             if (str == null || str.isEmpty()) {
                 return null
             }
-
-            val bais = ByteArrayInputStream(Base64.decode(str,Base64.DEFAULT))
+            val bais = ByteArrayInputStream(Base64.decode(str, Base64.DEFAULT))
             val ois = ObjectInputStream(bais)
 
             @Suppress("UNCHECKED_CAST")
