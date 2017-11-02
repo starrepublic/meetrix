@@ -50,7 +50,7 @@ class GoogleApiRepository @Inject constructor(val calendar: com.google.api.servi
                     it.onError(e)
                 }
             }
-        };
+        }
     }
 
     override fun deleteEvent(event: Event): Single<Unit> {

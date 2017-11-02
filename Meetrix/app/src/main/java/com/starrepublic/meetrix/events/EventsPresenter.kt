@@ -1,6 +1,7 @@
 package com.starrepublic.meetrix.events
 
 import android.Manifest
+import android.util.Log
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.util.DateTime
 import com.google.api.services.admin.directory.model.CalendarResource
@@ -31,6 +32,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                                           val settings: Settings,
                                           val googleApiRepository: GoogleApiRepository,
                                           val networkUtils: NetworkUtils) : BasePresenter<EventsView>() {
+
     //errors
     val ERROR_CREATE_EVENT: Int = 960
     val ERROR_USERS: Int = 970
@@ -49,17 +51,17 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
         }
         get() = settings.accountName
     var users: Map<String, User> = emptyMap()
-    var adding: Boolean = false
+    //var adding: Boolean = false
     private val refreshEventsSubject = PublishSubject<Long>()
     private val getRoomsSingle = googleApiRepository.getRooms().androidAsync()
     private val getUsersSingle = googleApiRepository.getUsers().androidAsync()
     private var subscriptions: SubscriptionList = SubscriptionList()
     private var eventsSubscription: Subscription? = null
     private var loadingEvents: Boolean = false
+    private var addedEvent: Event? = null
     private var eventObservable = Observable.merge(Observable.interval(0, 15, TimeUnit.SECONDS).filter {
         !loadingEvents
-    }, refreshEventsSubject)
-            .filter { !adding }
+    }, refreshEventsSubject.delay(1, TimeUnit.SECONDS))
             .doOnNext {
                 view?.showLoading(view?.getString(R.string.loading_events))
             }
@@ -83,14 +85,20 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                 }
                 Observable.just(events)
             }
-            .flatMap {
+            .map {
+                var containsEvent = false
                 it.forEach {
-                    val event = it
-                    it.creator.displayName = users.get(it.creator.email)?.name?.fullName ?: event.creator.email
+                    it.creator.displayName = users[it.creator.email]?.name?.fullName ?: it.creator.email
+                    if (it.id == addedEvent?.id) {
+
+                        containsEvent = true
+                    }
                 }
-                Observable.just(it)
+                if (!containsEvent && addedEvent != null) {
+                    return@map it.plus(addedEvent!!)
+                }
+                it
             }
-            .filter { !adding }
             .onErrorResumeNext {
                 val errorObservable = Observable.error<List<Event>>(it)
 
@@ -177,6 +185,7 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
         loadingEvents = false
 
         eventsSubscription = eventObservable.subscribe({
+
             if (it != null) {
                 view?.showEvents(it)
             }
@@ -208,19 +217,16 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
         event.location = room?.resourceName
         event.summary = eventName
         event.attendees = arrayListOf(EventAttendee().setEmail(room?.resourceEmail))
-
+        addedEvent = event
         view?.addEvent(event)
-
-        adding = true
 
         view?.showLoading(view?.getString(R.string.new_event))
         subscriptions.add(googleApiRepository.saveEvent(accountName, event).doOnSuccess {
+            addedEvent = it
             view?.hideLoading()
             //refreshEventsSubject.onNext(0L)
         }.androidAsync().subscribe({
-            adding = false
         }, {
-            adding = false
             view?.hideLoading()
             view?.removeEvent(event)
             view?.showError(it, ERROR_CREATE_EVENT)

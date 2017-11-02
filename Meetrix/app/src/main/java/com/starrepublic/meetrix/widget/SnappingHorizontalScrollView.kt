@@ -25,11 +25,11 @@ class SnappingHorizontalScrollView : HorizontalScrollView {
     }
 
     private val detector: GestureDetectorCompat
-    private var currentlyTouching: Boolean = false;
+    private var currentlyTouching: Boolean = false
     private var currentlyScrolling: Boolean = false
-    private var lastDiff: Int = -1;
-    var snappingEnabled: Boolean = false;
-    var snapTo: Int = 0;
+    private var lastDiff: Int = -1
+    var snappingEnabled: Boolean = false
+    var snapTo: Int = 0
     var scrollable: Boolean = true
     fun scrollStopped() {
         if (snappingEnabled) {

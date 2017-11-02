@@ -243,7 +243,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         }
         val resources = context.resources;
         val glowPadDiameter = resources.getDimensionPixelSize(R.dimen.glowpad_outerring_diameter)
-        val metrics = resources.getDisplayMetrics()
+        val metrics = resources.displayMetrics
         val timeLineParams = binding.viewCurrentTimeline.layoutParams as ViewGroup.MarginLayoutParams
         timeLineParams.topMargin = -glowPadDiameter / 2 - context.dpToPx(108 / 2f - 32)
 

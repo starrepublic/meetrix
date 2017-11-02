@@ -25,14 +25,12 @@ class EventViewContainer : RelativeLayout {
     })
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
-        Log.d("asd", event.toString())
         return if (dragHelper.shouldInterceptTouchEvent(event)) {
             true
         } else super.onInterceptTouchEvent(event)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        Log.d("asd", "asfasf")
         dragHelper.processTouchEvent(event)
         return true
     }
