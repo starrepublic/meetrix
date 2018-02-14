@@ -19,9 +19,7 @@ class EventViewContainer : RelativeLayout {
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes)
 
     private val dragHelper: ViewDragHelper = ViewDragHelper.create(this, object : ViewDragHelper.Callback() {
-        override fun tryCaptureView(child: View?, pointerId: Int): Boolean {
-            return false
-        }
+        override fun tryCaptureView(child: View, pointerId: Int): Boolean = false
     })
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {

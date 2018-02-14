@@ -32,15 +32,14 @@ import java.util.*
 //}
 fun DialogFragment.setImmersiveMode(immersive: Boolean) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        activity.window.decorView.rootView.setOnApplyWindowInsetsListener(object : View.OnApplyWindowInsetsListener {
-            @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-            override fun onApplyWindowInsets(v: View?, insets: WindowInsets?): WindowInsets {
-                val bottomInset = insets!!.systemWindowInsetBottom
+        activity?.window?.decorView?.rootView?.setOnApplyWindowInsetsListener { _, insets ->
+            val bottomInset = insets.systemWindowInsetBottom
 
-                if (context != null && bottomInset > context.getNavigationBarHeight()) {
-                    val screenHeight = context.resources.displayMetrics.heightPixels.toFloat()
-                    var statusBarHeight = context.getStatusBarHeight()
-                    val availableSpace = screenHeight - (bottomInset - context.getNavigationBarHeight()) - statusBarHeight
+            context?.let {
+                if (bottomInset > it.getNavigationBarHeight()) {
+                    val screenHeight = it.resources.displayMetrics.heightPixels.toFloat()
+                    val statusBarHeight = it.getStatusBarHeight()
+                    val availableSpace = screenHeight - (bottomInset - it.getNavigationBarHeight()) - statusBarHeight
                     val window = dialog.window
                     val dialogRootView = window.decorView.findViewById<View>(android.R.id.content)
                     if (availableSpace > dialogRootView.height) {
@@ -57,9 +56,10 @@ fun DialogFragment.setImmersiveMode(immersive: Boolean) {
                         va.start()
                     }
                 }
-                return insets
             }
-        })
+
+            insets
+        }
     }
 }
 
@@ -81,13 +81,9 @@ fun ContextCompat.checkSelfPermission(context: Context, permission: String): Boo
             permission) == PackageManager.PERMISSION_GRANTED
 }
 
-fun Context.getAppComponent(): AppComponent {
-    return (applicationContext as App).appComponent!!
-}
+fun Context.getAppComponent(): AppComponent = (applicationContext as App).appComponent!!
 
-fun View.getLayoutInflater(): LayoutInflater {
-    return LayoutInflater.from(context)
-}
+fun View.getLayoutInflater(): LayoutInflater = LayoutInflater.from(context)
 
 fun View.showToast(message: String) {
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -97,9 +93,7 @@ fun View.showSnackBar(message: String) {
     Snackbar.make(this, message, Snackbar.LENGTH_SHORT).show()
 }
 
-fun Context.dpToPx(dp: Float): Int {
-    return (this.resources.displayMetrics.density * dp).toInt()
-}
+fun Context.dpToPx(dp: Float): Int = (this.resources.displayMetrics.density * dp).toInt()
 
 fun Context.getStatusBarHeight(): Int {
     val resources = this.resources

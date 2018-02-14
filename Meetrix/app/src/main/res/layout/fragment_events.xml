@@ -102,7 +102,7 @@
             android:fontFamily="sans-serif-light"
             android:gravity="center"
             android:text="@{ viewModel.room }"
-            android:textSize="88sp"
+            android:textSize="@dimen/room_title"
             tools:text="Nikki Sixx" />
 
         <TextView

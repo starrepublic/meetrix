@@ -24,6 +24,7 @@ import java.util.*
  * Created by richard on 2016-11-08.
  */
 abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(), BaseViewModel {
+
     companion object {
         val REQUEST_GOOGLE_PLAY_SERVICES = 0xFFF0
         val REQUEST_PERMISSIONS = 0xFFF1
@@ -32,16 +33,13 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
     var root: View? = null
     var presenter: P? = null
     private var requiredPermissions: Array<String> = arrayOf()
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        root = createView(inflater, container, savedInstanceState);
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        root = createView(inflater, container, savedInstanceState)
 
         if (root == null) {
-            Timber.i("skipping bingins as now binding method is provided...");
-            root = inflater!!.inflate(getViewId(), container, false);
+            Timber.i("skipping bindings as now binding method is provided...")
+            root = inflater.inflate(getViewId(), container, false)
         }
-
-
-
 
         return root;
     }
@@ -61,10 +59,10 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
         presenter = null
     }
 
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        presenter = createPresenter(context.getAppComponent())
+        presenter = createPresenter(context!!.getAppComponent())
     }
 
     override fun onResume() {
@@ -92,10 +90,10 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
     abstract fun getViewModel(): V
     abstract fun createPresenter(appComponent: AppComponent): P?
     override fun hasPermission(permission: String): Boolean {
-        val info = context.packageManager.getPermissionInfo(permission, 0)
+        val info = context?.packageManager?.getPermissionInfo(permission, 0)
         //workaround for checkSelfPermission returns false for "normal permissions" not needing to be requested
-        if (info.protectionLevel == PermissionInfo.PROTECTION_DANGEROUS) {
-            return ContextCompat.checkSelfPermission(context,
+        if (info?.protectionLevel == PermissionInfo.PROTECTION_DANGEROUS) {
+            return ContextCompat.checkSelfPermission(context!!,
                     permission) == PackageManager.PERMISSION_GRANTED
         }
 
@@ -148,7 +146,7 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
-            REQUEST_GOOGLE_PLAY_SERVICES -> if (resultCode !== Activity.RESULT_OK) {
+            REQUEST_GOOGLE_PLAY_SERVICES -> if (resultCode != Activity.RESULT_OK) {
                 onPlayServicesUnavailable()
             } else {
                 onPlayServicesInstalled()
@@ -157,8 +155,8 @@ abstract class BaseFragment<V : BaseViewModel, P : BasePresenter<V>> : Fragment(
     }
 
     open fun onPlayServicesUnavailable() {
-        AlertDialog.Builder(context).setMessage(R.string.common_google_play_services_unsupported_text).setCancelable(false).setNeutralButton("OK", { dialog, button ->
-            activity.finish();
+        AlertDialog.Builder(context!!).setMessage(R.string.common_google_play_services_unsupported_text).setCancelable(false).setNeutralButton("OK", { _, _ ->
+            activity?.finish()
         }).create().show()
     }
 

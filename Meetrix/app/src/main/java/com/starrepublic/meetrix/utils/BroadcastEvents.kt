@@ -10,6 +10,7 @@ import android.support.v4.content.LocalBroadcastManager
  * Created by richard on 2016-11-12.
  */
 class BroadcastEvents {
+
     companion object {
         val dialogClosedEvent = "dialog_closed"
         fun register(context: Context, messageReceiver: BroadcastReceiver, filter: String) {
@@ -21,7 +22,7 @@ class BroadcastEvents {
             LocalBroadcastManager.getInstance(context).unregisterReceiver(messageReceiver)
         }
 
-        fun send(context: Context?, intent: Intent) {
+        fun send(context: Context, intent: Intent) {
             LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
         }
     }

@@ -15,6 +15,7 @@ import com.starrepublic.meetrix.utils.addFragment
  * Created by richard on 2016-11-02.
  */
 class EventsActivity : ImmersiveActivity() {
+
     override fun onResume() {
         super.onResume()
         setFlags()

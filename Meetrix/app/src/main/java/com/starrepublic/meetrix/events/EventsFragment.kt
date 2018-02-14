@@ -79,10 +79,10 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
             val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
             val flagScreenOn = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             if (isCharging) {
-                activity.window.addFlags(flagScreenOn)
+                activity?.window?.addFlags(flagScreenOn)
                 wakeDevice()
             } else {
-                activity.window.clearFlags(flagScreenOn)
+                activity?.window?.clearFlags(flagScreenOn)
             }
             val chargePlug = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
             val usbCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_USB
@@ -123,7 +123,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     private lateinit var fullWakeLock: PowerManager.WakeLock
 
     override fun showRooms(rooms: List<CalendarResource>) {
-        val dialog: SelectRoomDialogFragment? = (fragmentManager.findFragmentByTag("select_room_dialog") as SelectRoomDialogFragment?)
+        val dialog: SelectRoomDialogFragment? = (fragmentManager?.findFragmentByTag("select_room_dialog") as SelectRoomDialogFragment?)
         dialog?.showRooms(rooms)
     }
 
@@ -131,7 +131,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         super.onCreate(savedInstanceState)
 
         retainInstance = true
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val powerManager = context?.getSystemService(Context.POWER_SERVICE) as PowerManager
         fullWakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "MEETRIX - FULL WAKE LOCK")
 
 
@@ -147,10 +147,13 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         fadeInAnimation.duration = 400
         fadeInAnimation.isFillEnabled = true
         fadeInAnimation.fillAfter = true
-        val resources = context.resources
+        val resources = context!!.resources
 
-        colorAvailable = ContextCompat.getColor(context, R.color.available)
-        colorUnavailable = ContextCompat.getColor(context, R.color.unavailable)
+        context?.let {
+            colorAvailable = ContextCompat.getColor(it, R.color.available)
+            colorUnavailable = ContextCompat.getColor(it, R.color.unavailable)
+        }
+
 
         timeWidth = resources.getDimensionPixelSize(R.dimen.time_width)
         timeHeight = resources.getDimensionPixelSize(R.dimen.time_height)
@@ -180,7 +183,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     override fun showSelectRoomDialog() {
-        val dialog: SelectRoomDialogFragment? = (fragmentManager.findFragmentByTag("select_room_dialog") as SelectRoomDialogFragment?)
+        val dialog: SelectRoomDialogFragment? = (fragmentManager?.findFragmentByTag("select_room_dialog") as SelectRoomDialogFragment?)
         if (dialog == null) {
             val selectRoomDialogFragment = SelectRoomDialogFragment()
             selectRoomDialogFragment.setTargetFragment(this, 0)
@@ -195,7 +198,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         when (requestCode) {
             REQUEST_ACCOUNT_PICKER -> {
                 accountPickerShown = false
-                if (resultCode === Activity.RESULT_OK && data != null && data.extras != null) {
+                if (resultCode == Activity.RESULT_OK && data != null && data.extras != null) {
                     val accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
 
                     presenter?.accountName = accountName
@@ -213,9 +216,10 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         }
     }
 
+    @SuppressLint("MissingPermission")
     fun wakeDevice() {
         fullWakeLock.acquire()
-        val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        val keyguardManager = context?.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         val keyguardLock = keyguardManager.newKeyguardLock("TAG")
         keyguardLock.disableKeyguard()
     }
@@ -230,7 +234,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
         binding = DataBindingUtil.inflate<FragmentEventsBinding>(inflater!!, getViewId(), container!!, false)
 
-        binding.setVariable(BR.viewModel, vm);
+        binding.setVariable(BR.viewModel, vm)
 
         binding.txtTime.setOnClickListener { resetTimeline(true) }
         updateTime()
@@ -241,11 +245,11 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         binding.btnSettings.setOnClickListener {
             showSelectRoomDialog()
         }
-        val resources = context.resources;
+        val resources = context!!.resources
         val glowPadDiameter = resources.getDimensionPixelSize(R.dimen.glowpad_outerring_diameter)
         val metrics = resources.displayMetrics
         val timeLineParams = binding.viewCurrentTimeline.layoutParams as ViewGroup.MarginLayoutParams
-        timeLineParams.topMargin = -glowPadDiameter / 2 - context.dpToPx(108 / 2f - 32)
+        timeLineParams.topMargin = -glowPadDiameter / 2 - (context?.dpToPx(108 / 2f - 32) ?: 0)
 
 
         binding.layoutEvents.setPadding((metrics.widthPixels / 2f).toInt(), 0, (metrics.widthPixels / 2f).toInt(), 0)
@@ -348,7 +352,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
 
 
         for (i in 0..23) {
-            val timeView = TimeView(context)
+            val timeView = TimeView(context!!)
 
             calendar.set(Calendar.HOUR_OF_DAY, i)
             timeView.time = calendar.time
@@ -381,7 +385,9 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         }
         binding.scrollview.snapTo = (timeWidth / 4)
         val newEventParams = binding.layNewEvent.layoutParams as ViewGroup.MarginLayoutParams
-        newEventParams.leftMargin = (metrics.widthPixels / 2f).toInt()
+        if (metrics != null) {
+            newEventParams.leftMargin = (metrics.widthPixels / 2f).toInt()
+        }
         val root = binding.root
 
         return root
@@ -410,7 +416,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         soundRelease = MediaPlayer.create(context, R.raw.pop_char)
 
         if (isCharging()) {
-            activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
 
         super.onResume()
@@ -423,8 +429,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     fun isCharging(): Boolean {
-        val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
+        val intent = context?.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val plugged = intent?.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
         return plugged == BatteryManager.BATTERY_PLUGGED_AC || plugged == BatteryManager.BATTERY_PLUGGED_USB
     }
 
@@ -438,7 +444,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         when (error) {
             is GooglePlayServicesAvailabilityIOException -> {
                 GooglePlayServicesUtil.showErrorDialogFragment(error.connectionStatusCode, activity, this, 99, {
-                    activity.finish()
+                    activity?.finish()
                 })
             }
 
@@ -460,7 +466,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     private fun hideRoomSelectDialog() {
-        val dialog: SelectRoomDialogFragment? = (fragmentManager.findFragmentByTag("select_room_dialog") as SelectRoomDialogFragment?)
+        val dialog: SelectRoomDialogFragment? = (fragmentManager?.findFragmentByTag("select_room_dialog") as SelectRoomDialogFragment?)
         dialog?.dismiss()
     }
 
@@ -484,7 +490,7 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
     }
 
     private fun renderEvent(event: Event): EventView {
-        val eventView = EventView(context)
+        val eventView = EventView(context!!)
         eventView.event = event
         eventView.textColor = if (roomEnabled) colorAvailable else colorUnavailable
 
@@ -509,8 +515,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         intentFilterPower.addAction(ACTION_POWER_CONNECTED)
         intentFilterPower.addAction(ACTION_POWER_DISCONNECTED)
 
-        context.registerReceiver(receiverTick, IntentFilter(Intent.ACTION_TIME_TICK))
-        context.registerReceiver(receiverPower, intentFilterPower)
+        context?.registerReceiver(receiverTick, IntentFilter(Intent.ACTION_TIME_TICK))
+        context?.registerReceiver(receiverPower, intentFilterPower)
     }
 
     private fun updateTime() {
@@ -546,8 +552,8 @@ class EventsFragment @Inject constructor() : BaseFragment<EventsView, EventsPres
         super.onStop()
 
         if (receiverTick != null) {
-            context.unregisterReceiver(receiverTick)
-            context.unregisterReceiver(receiverPower)
+            context?.unregisterReceiver(receiverTick)
+            context?.unregisterReceiver(receiverPower)
         }
     }
 

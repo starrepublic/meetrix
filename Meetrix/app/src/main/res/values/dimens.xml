@@ -5,4 +5,5 @@
     <dimen name="time_height">192dp</dimen>
     <dimen name="glowpad_outer_radius">135dp</dimen>
     <dimen name="event_height">128dp</dimen>
+    <dimen name="room_title">44sp</dimen>
 </resources>

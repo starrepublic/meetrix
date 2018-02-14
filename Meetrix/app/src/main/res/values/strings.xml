@@ -15,4 +15,5 @@
     <string name="cancel">Cancel</string>
     <string name="to">to</string>
     <string name="error">Unable to load data</string>
+    <string name="no_title">(No title)</string>
 </resources>

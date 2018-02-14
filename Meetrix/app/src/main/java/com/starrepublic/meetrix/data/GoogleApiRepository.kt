@@ -15,6 +15,7 @@ import javax.inject.Inject
  * Created by richard on 2016-11-02.
  */
 class GoogleApiRepository @Inject constructor(val calendar: com.google.api.services.calendar.Calendar, val directory: Directory) : DataSource {
+
     companion object {
         const val DAY_IN_MILLIS = 1000 * 60 * 60 * 24
     }

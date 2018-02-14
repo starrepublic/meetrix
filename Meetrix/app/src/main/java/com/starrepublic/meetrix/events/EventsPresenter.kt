@@ -73,12 +73,13 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                 loadingEvents = false
                 val events = it
                 it.forEach {
+                    it.summary = it.summary ?: view?.getString(R.string.no_title)
                     if (users.contains(it.creator.email)) {
                         return@flatMap getUsersSingle.onErrorReturn {
                             emptyMap()
                         }.map {
-                            users = it
-                        }.toObservable().flatMap {
+                                    users = it
+                                }.toObservable().flatMap {
                             Observable.just(events)
                         }
                     }
@@ -98,24 +99,6 @@ class EventsPresenter @Inject constructor(val cedentials: GoogleAccountCredentia
                     return@map it.plus(addedEvent!!)
                 }
                 it
-            }
-            .onErrorResumeNext {
-                val errorObservable = Observable.error<List<Event>>(it)
-
-                if (it is IOException && networkUtils.isWifiEnabled) {
-                    networkUtils.isWifiEnabled = false
-                    return@onErrorResumeNext Observable.just(emptyList<Event>())
-                            .delay(5, TimeUnit.SECONDS)
-                            .flatMap {
-                                networkUtils.isWifiEnabled = true
-                                Observable.just(it)
-                            }
-                            .delay(10, TimeUnit.SECONDS)
-                            .flatMap {
-                                errorObservable
-                            }
-                }
-                errorObservable
             }
             .androidAsync()
             .doOnUnsubscribe {

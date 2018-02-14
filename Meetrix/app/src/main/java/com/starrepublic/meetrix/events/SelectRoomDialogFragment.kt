@@ -23,6 +23,7 @@ import java.util.*
  * Created by richard on 2016-11-09.
  */
 class SelectRoomDialogFragment : BaseDialogFragment() {
+
     companion object {
         fun newInstance() = SelectRoomDialogFragment()
     }
@@ -55,14 +56,6 @@ class SelectRoomDialogFragment : BaseDialogFragment() {
         fragment.presenter?.loadRooms()
     }
 
-    override fun onAttach(context: Context?) {
-        super.onAttach(context)
-    }
-
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-    }
-
     fun showRooms(resources: List<CalendarResource>?) {
         items.clear()
         resources?.forEach {
@@ -74,17 +67,17 @@ class SelectRoomDialogFragment : BaseDialogFragment() {
         adapter.notifyDataSetChanged()
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        binding = DataBindingUtil.inflate<DialogSelectRoomBinding>(inflater, R.layout.dialog_select_room, container, false);
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        binding = DataBindingUtil.inflate(inflater, R.layout.dialog_select_room, container, false)
 
-        adapter = ArrayAdapter<String>(context, R.layout.list_item_room, items);
+        adapter = ArrayAdapter(context, R.layout.list_item_room, items)
 
         binding.setVariable(BR.viewModel, vm)
         dialog.setTitle(R.string.select_room)
 
-        binding.listRooms?.adapter = adapter
-        binding.listRooms?.setOnItemClickListener { adapterView, view, i, l ->
-            val name = items.get(i)
+        binding.listRooms.adapter = adapter
+        binding.listRooms.setOnItemClickListener { _, _, i, _ ->
+            val name = items[i]
 
             fragment.presenter?.room = resources?.find({
                 it.resourceName == name
@@ -95,6 +88,7 @@ class SelectRoomDialogFragment : BaseDialogFragment() {
 
         return binding.root
     }
+
     /*
     override fun show(manager: FragmentManager?, tag: String?) {
 
@@ -119,7 +113,9 @@ class SelectRoomDialogFragment : BaseDialogFragment() {
 
     override fun onDismiss(dialog: DialogInterface?) {
         super.onDismiss(dialog)
-        BroadcastEvents.send(context, Intent(BroadcastEvents.dialogClosedEvent))
+        context?.let {
+            BroadcastEvents.send(it, Intent(BroadcastEvents.dialogClosedEvent))
+        }
     }
 }
 

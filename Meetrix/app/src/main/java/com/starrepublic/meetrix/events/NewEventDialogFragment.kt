@@ -24,6 +24,7 @@ import java.util.*
  * Created by richard on 2016-11-12.
  */
 class NewEventDialogFragment : BaseDialogFragment() {
+
     companion object {
         val DATE_FORMAT: SimpleDateFormat = SimpleDateFormat("HH:mm")
         val EXTRA_FROM: String = "extra_from"
@@ -50,21 +51,19 @@ class NewEventDialogFragment : BaseDialogFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        from = Date(arguments.getLong(EXTRA_FROM))
-        to = Date(arguments.getLong(EXTRA_TO))
+        arguments?.let {
+            from = Date(it.getLong(EXTRA_FROM))
+            to = Date(it.getLong(EXTRA_TO))
+        }
 
         setImmersiveMode(true)
-    }
-
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
     }
 
     private lateinit var binding: DialogNewEventBinding
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         binding = DataBindingUtil.inflate<DialogNewEventBinding>(LayoutInflater.from(context), R.layout.dialog_new_event, null, false);
 
-        binding.txtEventName.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES;
+        binding.txtEventName.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
         binding.txtEventName.setOnEditorActionListener({ v, actionId, event ->
             var handled = false
             if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -81,7 +80,7 @@ class NewEventDialogFragment : BaseDialogFragment() {
         vm.eventName = getString(R.string.event_name_default_value)
 
         binding.setVariable(BR.viewModel, vm)
-        val dialog = AlertDialog.Builder(context)
+        val dialog = AlertDialog.Builder(context!!)
                 .setTitle(R.string.new_event)
                 .setPositiveButton(R.string.create,
                         { dialog, whichButton ->
@@ -117,7 +116,10 @@ class NewEventDialogFragment : BaseDialogFragment() {
 
     override fun onDismiss(dialog: DialogInterface?) {
         super.onDismiss(dialog)
-        fragment.dismissedDialog(this);
-        BroadcastEvents.send(context, Intent(BroadcastEvents.dialogClosedEvent))
+        fragment.dismissedDialog(this)
+        context?.let {
+            BroadcastEvents.send(it, Intent(BroadcastEvents.dialogClosedEvent))
+        }
+
     }
 }
