@@ -19,28 +19,26 @@ import javax.inject.Singleton
  */
 @Module
 class GoogleApiModule {
-    private val scopes = arrayOf<String>(CalendarScopes.CALENDAR, DirectoryScopes.ADMIN_DIRECTORY_RESOURCE_CALENDAR, DirectoryScopes.ADMIN_DIRECTORY_USER, DirectoryScopes.ADMIN_DIRECTORY_USER_READONLY)
+
+    private val scopes = arrayOf(CalendarScopes.CALENDAR, DirectoryScopes.ADMIN_DIRECTORY_RESOURCE_CALENDAR, DirectoryScopes.ADMIN_DIRECTORY_USER, DirectoryScopes.ADMIN_DIRECTORY_USER_READONLY)
     private val jsonFactory = JacksonFactory.getDefaultInstance()
-    private val transport: HttpTransport = AndroidHttp.newCompatibleTransport();
+    private val transport: HttpTransport = AndroidHttp.newCompatibleTransport()
     @Provides
     @Singleton
-    fun provideCredential(context: Context): GoogleAccountCredential {
-        val credential = GoogleAccountCredential.usingOAuth2(
-                context.applicationContext, scopes.asList()).setBackOff(ExponentialBackOff())
-        return credential;
-    }
+    fun provideCredential(context: Context): GoogleAccountCredential = GoogleAccountCredential.usingOAuth2(
+            context.applicationContext, scopes.asList()).setBackOff(ExponentialBackOff())
 
     @Provides
     @Singleton
     fun provideCalendar(credential: GoogleAccountCredential): Calendar {
         return Calendar.Builder(
-                transport, jsonFactory, credential).setApplicationName("Meetrix").build();
+                transport, jsonFactory, credential).setApplicationName("Meetrix").build()
     }
 
     @Provides
     @Singleton
     fun provideDirectory(credential: GoogleAccountCredential): Directory {
         return Directory.Builder(
-                transport, jsonFactory, credential).setApplicationName("Meetrix").build();
+                transport, jsonFactory, credential).setApplicationName("Meetrix").build()
     }
 }

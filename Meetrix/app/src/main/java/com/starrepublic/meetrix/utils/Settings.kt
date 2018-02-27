@@ -11,7 +11,7 @@ import com.google.api.services.admin.directory.model.CalendarResource
  * Created by richard on 2016-11-05.
  */
 class Settings(val context: Context) {
-    private val preferences: SharedPreferences
+    private val preferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
     private val editor: SharedPreferences.Editor
 
     companion object {
@@ -19,7 +19,6 @@ class Settings(val context: Context) {
     }
 
     init {
-        preferences = PreferenceManager.getDefaultSharedPreferences(context);
         editor = preferences.edit()
     }
 
