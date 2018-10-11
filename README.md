@@ -1,6 +1,7 @@
 # Meetrix
+
 ## Introduction
-Meetrix is an Android application which displays ongoing meeting information based from your Gsuite calendar room resoruces.
+Meetrix is an Android application which displays ongoing meeting information based from your Gsuite calendar room resources.
 
 **Features:**
 * Create a quick booking using the app
@@ -12,7 +13,7 @@ Meetrix is an Android application which displays ongoing meeting information bas
 ## Installation
 This section guides you through the installation process
 
-**Requrements:**
+**Requirements:**
 * Any Android device running Android 4.1 (Jelly Bean) or later *(preferably a tablet)*
 * Google G Suite *(formally Google apps for work)*
 
@@ -37,5 +38,5 @@ This app containts a few modern Android development techniques:
 * **RxKotlin**
 * **DataBinding**
 
-## Termes of use
+## Terms of use
 This app may be used as pleased. However, it may not be sold or rebranded for profit use. You must give credit to Star Republic if using this app in your company.
